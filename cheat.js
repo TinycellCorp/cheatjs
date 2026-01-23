@@ -35,7 +35,7 @@
     var groups = {};       // groupKey → { desc, commands: [], container, expanded }
     var container = null;
     var version = null;
-    var GLOBAL_GROUP = 'global';
+    var GLOBAL_GROUP = 'GLOBAL';
 
     // 스타일 정의
     var STYLES = {
@@ -911,6 +911,82 @@
     // 제스처 등록
     setupDesktopGesture();
     setupMobileGesture();
+
+    // postMessage를 통한 명령어 추가 (콜백 대신 이벤트 발행)
+    function addViaMessage(payload, groupKey) {
+        var key = payload.key;
+        var name = payload.name;
+        var targetGroup = groupKey || GLOBAL_GROUP;
+
+        // 버튼 클릭 시 이벤트 발행하는 콜백 생성
+        var callback = function() {
+            window.postMessage({
+                type: 'CHEAT_EVENT',
+                event: 'action_triggered',
+                payload: {
+                    key: key,
+                    name: name,
+                    group: targetGroup
+                }
+            }, '*');
+        };
+
+        add(name, payload.desc ? [callback, payload.desc] : callback, targetGroup);
+    }
+
+    // postMessage를 통한 그룹 추가
+    function addGroupViaMessage(payload) {
+        var groupInfo = payload.group;  // string | [name, desc]
+        var actionList = payload.actions || [];
+
+        // 그룹 키 추출
+        var groupKey = Array.isArray(groupInfo) ? groupInfo[0] : groupInfo;
+
+        // 기존 addGroup 로직으로 그룹 생성 (빈 actionMap)
+        addGroup(groupInfo, {});
+
+        // 각 액션을 addViaMessage로 등록
+        actionList.forEach(function(act) {
+            addViaMessage(act, groupKey);
+        });
+    }
+
+    // postMessage 핸들러
+    function handlePostMessage(e) {
+        if (!e.data || e.data.type !== 'CHEAT_REQUEST') return;
+
+        var data = e.data;
+        var action = data.action;
+        var payload = data.payload || {};
+
+        switch (action) {
+            case 'init':
+                cheat(payload.version, container || document.body);
+                // 글로벌 명령어 등록
+                if (payload.actions && Array.isArray(payload.actions)) {
+                    payload.actions.forEach(function(act) {
+                        addViaMessage(act, GLOBAL_GROUP);
+                    });
+                }
+                break;
+            case 'addGroup':
+                addGroupViaMessage(payload);
+                break;
+            case 'clear':
+                clear();
+                break;
+            case 'remove':
+                remove(payload.name);
+                break;
+            case 'removeGroup':
+                removeGroup(payload.group);
+                break;
+            // show/hide/toggle은 내부 제스처 전용 (보안상 외부 노출 안함)
+        }
+    }
+
+    // postMessage 리스너 자동 등록
+    window.addEventListener('message', handlePostMessage);
 
     console.log('[Cheat] 초기화 완료. 제스처: 데스크탑=Shift+클릭, 모바일=트리플탭');
 })();

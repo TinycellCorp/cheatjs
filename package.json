@@ -1,0 +1,33 @@
+{
+  "name": "@TinycellCorp/cheatjs-types",
+  "version": "1.0.0",
+  "description": "TypeScript type definitions for cheatjs",
+  "main": "cheat.js",
+  "types": "cheat.d.ts",
+  "files": [
+    "cheat.js",
+    "cheat.min.js",
+    "cheat.d.ts"
+  ],
+  "scripts": {
+    "minify": "terser cheat.js -o cheat.min.js -c -m",
+    "release": "npm run minify && npm run release:commit && npm run release:tag",
+    "release:commit": "git add -A && git commit -m \"release: v%npm_package_version%\"",
+    "release:tag": "git tag -a v%npm_package_version% -m \"v%npm_package_version%\" && git push && git push --tags",
+    "release:patch": "npm version patch --no-git-tag-version && npm run release",
+    "release:minor": "npm version minor --no-git-tag-version && npm run release",
+    "release:major": "npm version major --no-git-tag-version && npm run release"
+  },
+  "devDependencies": {
+    "terser": "^5.37.0",
+    "typescript": "^5.9.3"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/paka-inc/cheatjs.git"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "license": "MIT"
+}
