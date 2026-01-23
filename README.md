@@ -57,6 +57,68 @@ cheat.removeGroup(name)   // 그룹 삭제
 cheat.list()              // 명령어 목록 출력
 ```
 
+## 타입 지원
+
+```shell
+npm install -D @TinycellCorp/cheatjs-types
+```
+
+## postMessage
+
+cheat객체의 의존성 제거를 위한 이벤트 기반 제어
+
+
+
+```ts
+// cheat('<version>', <dom>, <actions>)
+// 내부에서 document.body 사용함.
+window.postMessage({
+    type: 'CHEAT_REQUEST',
+    action: 'init',
+    payload: {
+        version: VERSION.semantic(),
+        actions: [
+            { name: '아이템 전체 추가', key: 'add-all-items' }
+        ]
+    }
+} as CheatRequest, '*');
+
+ // 이벤트 수신
+window.addEventListener('message', this.handleCheatEvent.bind(this));
+
+function handleCheatEvent(e: MessageEvent): void {
+    const data = e.data as CheatEvent;
+    if (data.type !== 'CHEAT_EVENT') return;
+    if (data.event !== 'action_triggered') return;
+
+    const key = data.payload.key;
+    switch (key) {
+        case 'add-all-items':
+            // add item data
+            break;
+    }
+}
+
+window.postMessage({
+    type: 'CHEAT_REQUEST',
+    action: 'addGroup',
+    payload: {
+        group: 'lobby-actions'
+        actions: [
+            { name: 'Action1', key: 'action-1' }
+        ]
+    }
+} as CheatRequest, '*');
+
+window.postMessage({
+    type: 'CHEAT_REQUEST',
+    action: 'removeGroup',
+    payload: {
+        group: 'lobby-actions'
+    }
+} as CheatRequest, '*');
+```
+
 ## License
 
 MIT
