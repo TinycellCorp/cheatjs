@@ -85,13 +85,6 @@ declare global {
         };
     }
 
-    /** remove 요청 */
-    interface CheatRequestRemove {
-        type: 'CHEAT_REQUEST';
-        action: 'remove';
-        payload: { name: string };
-    }
-
     /** removeGroup 요청 */
     interface CheatRequestRemoveGroup {
         type: 'CHEAT_REQUEST';
@@ -110,7 +103,6 @@ declare global {
     type CheatRequest =
         | CheatRequestInit
         | CheatRequestAddGroup
-        | CheatRequestRemove
         | CheatRequestRemoveGroup
         | CheatRequestClear;
 

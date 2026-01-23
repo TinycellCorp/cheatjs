@@ -6,10 +6,10 @@
 
 ```html
 <!-- 원본 (디버깅용) -->
-<script src="https://cdn.jsdelivr.net/gh/TinycellCorp/cheatjs@v1.0.0/cheat.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/TinycellCorp/cheatjs@v1.1.0/cheat.js"></script>
 
 <!-- Minified (프로덕션용, 권장) -->
-<script src="https://cdn.jsdelivr.net/gh/TinycellCorp/cheatjs@v1.0.0/cheat.min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/TinycellCorp/cheatjs@v1.1.0/cheat.min.js"></script>
 
 <!-- 최신 버전 -->
 <script src="https://cdn.jsdelivr.net/gh/TinycellCorp/cheatjs@latest/cheat.min.js"></script>
@@ -47,11 +47,11 @@ cheat.show()              // UI 표시
 cheat.hide()              // UI 숨김
 cheat.toggle()            // 토글
 
-cheat.add(name, action)   // 명령어 추가
-cheat.remove(name)        // 명령어 삭제
-cheat.clear()             // 전체 삭제
+cheat.add(name, action, groupKey?)  // 명령어 추가 (groupKey 생략 시 GLOBAL)
+cheat.remove(name)                  // 명령어 삭제
+cheat.clear()                       // 전체 삭제
 
-cheat.addGroup(name, map) // 그룹 추가
+cheat.addGroup(groupInfo, map)      // 그룹 추가 (groupInfo: string | [name, desc])
 cheat.removeGroup(name)   // 그룹 삭제
 
 cheat.list()              // 명령어 목록 출력
@@ -103,7 +103,7 @@ window.postMessage({
     type: 'CHEAT_REQUEST',
     action: 'addGroup',
     payload: {
-        group: 'lobby-actions'
+        group: 'lobby-actions',
         actions: [
             { name: 'Action1', key: 'action-1' }
         ]

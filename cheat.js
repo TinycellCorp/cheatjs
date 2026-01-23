@@ -37,6 +37,11 @@
     var version = null;
     var GLOBAL_GROUP = 'GLOBAL';
 
+    // document 레벨 이벤트 핸들러 참조 (정리용)
+    var docMouseMoveHandler = null;
+    var docMouseUpHandler = null;
+    var listenersRegistered = false;
+
     // 스타일 정의
     var STYLES = {
         overlay: {
@@ -127,18 +132,11 @@
             whiteSpace: 'nowrap',
             transition: 'background-color 0.2s, color 0.2s'
         },
-        tabActive: {
-            backgroundColor: 'rgba(255, 255, 255, 0.9)',
-            color: '#202020'
-        },
         tabContent: {
             display: 'grid',
             gridTemplateColumns: 'repeat(2, 1fr)',
             gap: '8px',
             padding: '12px 0'
-        },
-        tabContentHidden: {
-            display: 'none'
         },
         actionBtn: {
             padding: '12px',
@@ -308,11 +306,13 @@
             e.preventDefault();
         });
 
-        document.addEventListener('mousemove', function (e) {
+        // document 레벨 핸들러 (정리 가능하도록 참조 저장)
+        docMouseMoveHandler = function (e) {
             if (isDragging) onDragMove(e.clientY);
-        });
+        };
+        docMouseUpHandler = onDragEnd;
 
-        document.addEventListener('mouseup', onDragEnd);
+        registerDocumentListeners();
 
         // 탭바
         var tabBar = document.createElement('div');
@@ -382,6 +382,14 @@
         };
 
         return ui;
+    }
+
+    // document 레벨 리스너 등록 헬퍼
+    function registerDocumentListeners() {
+        if (listenersRegistered || !docMouseMoveHandler) return;
+        document.addEventListener('mousemove', docMouseMoveHandler);
+        document.addEventListener('mouseup', docMouseUpHandler);
+        listenersRegistered = true;
     }
 
     // 탭 선택
@@ -525,6 +533,9 @@
     // UI 표시
     function show() {
         if (!ui) createUI();
+        // hide 후 재표시 시 리스너 재등록
+        registerDocumentListeners();
+
         var target = container || document.body;
         if (!ui.overlay.parentNode && target) {
             target.appendChild(ui.overlay);
@@ -572,6 +583,14 @@
                 if (ui.bottomSheet.parentNode) {
                     ui.bottomSheet.parentNode.removeChild(ui.bottomSheet);
                 }
+                // document 레벨 이벤트 리스너 정리 (메모리 누수 방지)
+                if (docMouseMoveHandler) {
+                    document.removeEventListener('mousemove', docMouseMoveHandler);
+                }
+                if (docMouseUpHandler) {
+                    document.removeEventListener('mouseup', docMouseUpHandler);
+                }
+                listenersRegistered = false;
             }, 300);
         }
         isVisible = false;
@@ -897,8 +916,16 @@
     window.cheat.show = show;
     window.cheat.hide = hide;
     window.cheat.toggle = toggle;
-    window.cheat.actions = actions;
-    window.cheat.groups = groups;
+
+    // actions/groups는 읽기 전용 스냅샷 반환 (얕은 복사 - 최상위 키만 보호)
+    Object.defineProperty(window.cheat, 'actions', {
+        get: function() { return Object.assign({}, actions); },
+        enumerable: true
+    });
+    Object.defineProperty(window.cheat, 'groups', {
+        get: function() { return Object.assign({}, groups); },
+        enumerable: true
+    });
 
     // 동적 추가/삭제 API
     window.cheat.add = add;
@@ -928,7 +955,7 @@
                     name: name,
                     group: targetGroup
                 }
-            }, '*');
+            }, window.location.origin);
         };
 
         add(name, payload.desc ? [callback, payload.desc] : callback, targetGroup);
@@ -953,6 +980,8 @@
 
     // postMessage 핸들러
     function handlePostMessage(e) {
+        // 보안: 같은 origin의 메시지만 허용
+        if (e.origin !== window.location.origin) return;
         if (!e.data || e.data.type !== 'CHEAT_REQUEST') return;
 
         var data = e.data;
@@ -974,9 +1003,6 @@
                 break;
             case 'clear':
                 clear();
-                break;
-            case 'remove':
-                remove(payload.name);
                 break;
             case 'removeGroup':
                 removeGroup(payload.group);
