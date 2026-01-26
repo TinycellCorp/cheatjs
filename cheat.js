@@ -614,7 +614,7 @@
                 e.stopPropagation();
                 toggle();
             }
-        }, false);
+        }, true);
     }
 
     // 모바일 트리플 탭 제스처 (같은 위치에서만)
