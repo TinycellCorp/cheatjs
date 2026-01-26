@@ -4,6 +4,8 @@
 
 
 
+
+
 /**
  * Cheat Utility - 게임 엔진 독립적인 치트 UI (바텀시트)
  *
@@ -134,8 +136,9 @@
         },
         tabBar: {
             display: 'flex',
+            alignItems: 'center',
             gap: '8px',
-            padding: '0 16px 12px 16px',
+            padding: '12px 16px',
             overflowX: 'auto',
             flexShrink: '0',
             borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
