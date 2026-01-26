@@ -1,22 +1,29 @@
 {
-  "name": "@TinycellCorp/cheatjs-types",
-  "version": "1.2.1",
-  "description": "TypeScript type definitions for cheatjs",
+  "name": "@TinycellCorp/cheatjs",
+  "version": "2.0.0",
+  "description": "Game engine agnostic cheat UI (bottom sheet)",
   "main": "cheat.js",
+  "browser": "cheat.min.js",
   "types": "cheat.d.ts",
+  "unpkg": "cheat.min.js",
+  "jsdelivr": "cheat.min.js",
+  "sideEffects": true,
   "files": [
     "cheat.js",
     "cheat.min.js",
     "cheat.d.ts"
   ],
   "scripts": {
+    "inject-version": "node scripts/inject-version.js",
     "minify": "terser cheat.js -o cheat.min.js -c -m",
     "type-check": "tsc --noEmit cheat.d.ts",
-    "build": "npm run minify && npm run type-check",
+    "build": "npm run inject-version && npm run minify && npm run type-check",
     "prepublishOnly": "npm run build",
-    "release:patch": "npm run build && npm version patch -m \"release: v%s\" && git push && git push --tags",
-    "release:minor": "npm run build && npm version minor -m \"release: v%s\" && git push && git push --tags",
-    "release:major": "npm run build && npm version major -m \"release: v%s\" && git push && git push --tags"
+    "version": "npm run build && git add cheat.js cheat.min.js",
+    "release:patch": "npm version patch -m \"release: v%s\" && git push && git push --tags",
+    "release:minor": "npm version minor -m \"release: v%s\" && git push && git push --tags",
+    "release:major": "npm version major -m \"release: v%s\" && git push && git push --tags",
+    "copy-to": "npm run build && node scripts/copy-to.js"
   },
   "devDependencies": {
     "terser": "^5.37.0",

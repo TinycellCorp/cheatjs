@@ -32,14 +32,31 @@ declare global {
         content: HTMLDivElement | null;
     }
 
+    /** 상태라인 옵션 (향후 확장용) */
+    interface StatuslineOptions {
+        separator: string;  // 기본값: ' | '
+    }
+
+    /** 상태라인 콜백 타입 */
+    type StatuslineCallback = (opt: StatuslineOptions) => (string | number | null | undefined)[];
+
+    /** 상태라인 함수 인터페이스 */
+    interface StatuslineFunction {
+        (callback: StatuslineCallback): void;
+        refresh(): void;
+    }
+
     /** 메인 함수 + 메서드 인터페이스 */
     interface CheatFunction {
-        (version?: string, container?: HTMLElement, actionMap?: CheatActionMap): void;
+        (actionMap?: CheatActionMap, container?: HTMLElement): void;
 
         // UI 제어
         show(): void;
         hide(): void;
         toggle(): void;
+
+        // 상태라인
+        statusline: StatuslineFunction;
 
         // 명령어 관리
         add(name: string, action: CheatAction, groupKey?: string): void;
@@ -70,7 +87,6 @@ declare global {
         type: 'CHEAT_REQUEST';
         action: 'init';
         payload: {
-            version?: string;
             actions?: CheatMessageAction[];
         };
     }

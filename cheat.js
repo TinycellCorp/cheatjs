@@ -1,9 +1,16 @@
+/** @version 2.0.0 */
+
+
+
+
+
 /**
  * Cheat Utility - 게임 엔진 독립적인 치트 UI (바텀시트)
  *
  * 사용법:
- *   cheat('1.0.3', document.body);                     - 초기화 + 버전 표시
- *   cheat('1.0.3', document.body, { '버튼명': () => {} }); - 초기화 + 버전 + global 명령어
+ *   cheat();                                          - 초기화
+ *   cheat({ '버튼명': () => {} });                     - 초기화 + global 명령어
+ *   cheat({ '버튼명': () => {} }, document.body);      - 초기화 + global 명령어 + 컨테이너
  *
  * 활성화 (토글):
  *   - 데스크탑: Shift+Click
@@ -13,6 +20,10 @@
  *   window.cheat.show()   - UI 표시
  *   window.cheat.hide()   - UI 숨김
  *   window.cheat.toggle() - 토글
+ *
+ *   // 상태라인 (버전/환경 정보 표시)
+ *   window.cheat.statusline(opt => ['v1.0.0', 'hi5']); - 상태라인 설정
+ *   window.cheat.statusline.refresh();                 - 상태라인 갱신
  *
  *   // 동적 추가/삭제
  *   window.cheat.add(name, action)                    - 명령어 추가 (action: 함수 또는 [함수, 설명])
@@ -24,6 +35,10 @@
  *   window.cheat.removeGroup(groupKey)               - 그룹 삭제
  *
  *   window.cheat.list()   - 명령어 트리 출력
+ *
+ *   // 디버그 모드
+ *   window.cheat.debug = true;  - 디버그 로그 활성화
+ *   window.cheat.debug = false; - 디버그 로그 비활성화 (기본값)
  */
 (function () {
     'use strict';
@@ -34,8 +49,14 @@
     var actions = {};      // name → { callback, desc, btn, group }
     var groups = {};       // groupKey → { desc, commands: [], container, expanded }
     var container = null;
-    var version = null;
+    var statuslineCallback = null; // 상태라인 콜백 함수
     var GLOBAL_GROUP = 'GLOBAL';
+    var debugMode = false; // 디버그 로그 출력 여부
+
+    // 디버그 로그 헬퍼
+    function log() {
+        if (debugMode) console.log.apply(console, arguments);
+    }
 
     // document 레벨 이벤트 핸들러 참조 (정리용)
     var docMouseMoveHandler = null;
@@ -94,14 +115,14 @@
             backgroundColor: 'rgba(255, 255, 255, 0.3)',
             borderRadius: '2px'
         },
-        versionLabel: {
-            position: 'absolute',
-            right: '16px',
-            top: '50%',
-            transform: 'translateY(-50%)',
-            fontSize: '16px',
+        statusline: {
+            padding: '8px 16px',
+            fontSize: '14px',
             color: 'rgba(255, 255, 255, 0.6)',
-            fontWeight: '600'
+            textAlign: 'center',
+            cursor: 'pointer',
+            flexShrink: '0',
+            borderBottom: '1px solid rgba(255, 255, 255, 0.05)'
         },
         content: {
             flex: '1',
@@ -244,16 +265,25 @@
         applyStyles(dragBar, STYLES.dragBar);
         dragHandle.appendChild(dragBar);
 
-        // 버전 라벨
-        var versionLabel = document.createElement('span');
-        applyStyles(versionLabel, STYLES.versionLabel);
-        versionLabel.id = 'cheat-version';
-        if (version) {
-            versionLabel.textContent = 'v' + version;
-        }
-        dragHandle.appendChild(versionLabel);
-
         bottomSheet.appendChild(dragHandle);
+
+        // 상태라인
+        var statuslineEl = document.createElement('div');
+        applyStyles(statuslineEl, STYLES.statusline);
+        statuslineEl.id = 'cheat-statusline';
+
+        // 탭/클릭 시 새로고침
+        statuslineEl.addEventListener('click', function(e) {
+            e.stopPropagation();
+            updateStatuslineUI();
+        });
+
+        // 내용 없으면 숨김
+        if (!statuslineCallback) {
+            statuslineEl.style.display = 'none';
+        }
+
+        bottomSheet.appendChild(statuslineEl);
 
         // 스와이프로 닫기 (터치 + 마우스)
         var startY = 0;
@@ -542,6 +572,9 @@
             target.appendChild(ui.bottomSheet);
         }
 
+        // 상태라인 갱신 (DOM append 후에 호출)
+        updateStatuslineUI();
+
         // 애니메이션 시작
         isAnimating = true;
 
@@ -561,7 +594,7 @@
         }, 350);
 
         isVisible = true;
-        console.log('[Cheat] 열림');
+        log('[Cheat] 열림');
     }
 
     // UI 숨김
@@ -594,7 +627,7 @@
             }, 300);
         }
         isVisible = false;
-        console.log('[Cheat] 닫힘');
+        log('[Cheat] 닫힘');
     }
 
     // UI 토글
@@ -634,7 +667,7 @@
                 clearTimeout(tapTimer);
                 tapTimer = null;
             }
-            console.log('[Cheat] 탭 카운트 리셋');
+            log('[Cheat] 탭 카운트 리셋');
         };
 
         window.addEventListener('touchend', function (e) {
@@ -650,7 +683,7 @@
                 firstTapX = x;
                 firstTapY = y;
                 tapCount = 1;
-                console.log('[Cheat] 탭 1 위치:', x, y);
+                log('[Cheat] 탭 1 위치:', x, y);
 
                 tapTimer = setTimeout(function () {
                     tapCount = 0;
@@ -663,18 +696,18 @@
 
                 if (distance <= TAP_RADIUS) {
                     tapCount++;
-                    console.log('[Cheat] 탭', tapCount, '거리:', Math.round(distance) + 'px');
+                    log('[Cheat] 탭', tapCount, '거리:', Math.round(distance) + 'px');
 
                     if (tapCount === 3) {
                         // 트리플 탭 성공
                         clearTimeout(tapTimer);
                         tapCount = 0;
-                        console.log('[Cheat] 트리플 탭 성공!');
+                        log('[Cheat] 트리플 탭 성공!');
                         toggle();
                     }
                 } else {
                     // 위치가 다르면 새로운 첫 탭으로
-                    console.log('[Cheat] 위치 벗어남, 리셋. 거리:', Math.round(distance) + 'px');
+                    log('[Cheat] 위치 벗어남, 리셋. 거리:', Math.round(distance) + 'px');
                     clearTimeout(tapTimer);
                     firstTapX = x;
                     firstTapY = y;
@@ -726,7 +759,7 @@
             groups[group].commands.push(name);
         }
 
-        console.log('[Cheat] 추가됨: "' + name + '"');
+        log('[Cheat] 추가됨: "' + name + '"');
     }
 
     // 단일 명령어 삭제
@@ -763,7 +796,7 @@
         // actions에서 제거
         delete actions[name];
 
-        console.log('[Cheat] 삭제됨: "' + name + '"');
+        log('[Cheat] 삭제됨: "' + name + '"');
     }
 
     // 그룹 추가 (오버로딩: groupInfo는 문자열 또는 [이름, 설명])
@@ -802,7 +835,7 @@
             }
         }
 
-        console.log('[Cheat] 그룹 추가됨: "' + groupKey + '" (' + count + '개 명령어)');
+        log('[Cheat] 그룹 추가됨: "' + groupKey + '" (' + count + '개 명령어)');
     }
 
     // 그룹 삭제
@@ -829,7 +862,7 @@
         // 그룹 자체 삭제
         delete groups[groupKey];
 
-        console.log('[Cheat] 그룹 삭제됨: "' + groupKey + '"');
+        log('[Cheat] 그룹 삭제됨: "' + groupKey + '"');
     }
 
     // 전체 삭제
@@ -862,12 +895,12 @@
         actions = {};
         groups = {};
 
-        console.log('[Cheat] 모든 명령어 삭제됨');
+        log('[Cheat] 모든 명령어 삭제됨');
     }
 
     // 명령어 트리 출력
     function list() {
-        console.log('[Cheat] 명령어 목록:');
+        log('[Cheat] 명령어 목록:');
 
         for (var groupKey in groups) {
             if (groups.hasOwnProperty(groupKey)) {
@@ -894,8 +927,7 @@
     }
 
     // 메인 함수
-    function cheat(versionStr, containerEl, actionMap) {
-        version = versionStr || null;
+    function cheat(actionMap, containerEl) {
         container = containerEl || document.body;
 
         createUI();
@@ -908,14 +940,45 @@
                 }
             }
         }
-
     }
+
+    // 상태라인 설정
+    function statusline(callback) {
+        statuslineCallback = callback;
+        updateStatuslineUI();
+    }
+
+    // 상태라인 UI 갱신
+    function updateStatuslineUI() {
+        var el = document.getElementById('cheat-statusline');
+        if (!el) return;
+
+        if (!statuslineCallback) {
+            el.style.display = 'none';
+            return;
+        }
+
+        // opt 객체 생성 (향후 확장용)
+        var opt = {
+            separator: ' | '
+        };
+
+        var result = statuslineCallback(opt);
+        var items = Array.isArray(result) ? result : [];
+        var text = items.filter(function(v) { return v != null; }).join(opt.separator);
+
+        el.textContent = text;
+        el.style.display = text ? '' : 'none';
+    }
+
+    statusline.refresh = updateStatuslineUI;
 
     // 전역 등록
     window.cheat = cheat;
     window.cheat.show = show;
     window.cheat.hide = hide;
     window.cheat.toggle = toggle;
+    window.cheat.statusline = statusline;
 
     // actions/groups는 읽기 전용 스냅샷 반환 (얕은 복사 - 최상위 키만 보호)
     Object.defineProperty(window.cheat, 'actions', {
@@ -934,6 +997,13 @@
     window.cheat.removeGroup = removeGroup;
     window.cheat.clear = clear;
     window.cheat.list = list;
+
+    // 디버그 모드 제어
+    Object.defineProperty(window.cheat, 'debug', {
+        get: function() { return debugMode; },
+        set: function(v) { debugMode = !!v; },
+        enumerable: true
+    });
 
     // 제스처 등록
     setupDesktopGesture();
@@ -990,7 +1060,7 @@
 
         switch (action) {
             case 'init':
-                cheat(payload.version, container || document.body);
+                cheat(null, container || document.body);
                 // 글로벌 명령어 등록
                 if (payload.actions && Array.isArray(payload.actions)) {
                     payload.actions.forEach(function(act) {
@@ -1014,5 +1084,5 @@
     // postMessage 리스너 자동 등록
     window.addEventListener('message', handlePostMessage);
 
-    console.log('[Cheat] 초기화 완료. 제스처: 데스크탑=Shift+클릭, 모바일=트리플탭');
+    log('[Cheat] 초기화 완료. 제스처: 데스크탑=Shift+클릭, 모바일=트리플탭');
 })();
