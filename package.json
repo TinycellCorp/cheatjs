@@ -1,6 +1,6 @@
 {
   "name": "@TinycellCorp/cheatjs",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Game engine agnostic cheat UI (bottom sheet)",
   "main": "cheat.js",
   "browser": "cheat.min.js",
