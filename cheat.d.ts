@@ -66,6 +66,9 @@ declare global {
         clear(): void;
         list(): void;
 
+        // 디버그 모드
+        debug: boolean;
+
         // 내부 상태 (읽기 전용)
         readonly actions: Record<string, CheatActionData>;
         readonly groups: Record<string, CheatGroupData>;
