@@ -21,9 +21,9 @@
     "build": "npm run inject-version && npm run minify && npm run validate-types && npm run type-check",
     "prepublishOnly": "npm run build",
     "version": "npm run build && git add cheat.js cheat.min.js",
-    "release:patch": "npm version patch -m \"release: v%s\" && git push && git push --tags",
-    "release:minor": "npm version minor -m \"release: v%s\" && git push && git push --tags",
-    "release:major": "npm version major -m \"release: v%s\" && git push && git push --tags",
+    "release:patch": "npm version patch -m \"release: v%s\" && git push && git push --tags && npm publish",
+    "release:minor": "npm version minor -m \"release: v%s\" && git push && git push --tags && npm publish",
+    "release:major": "npm version major -m \"release: v%s\" && git push && git push --tags && npm publish",
     "copy-to": "npm run build && node scripts/copy-to.js"
   },
   "devDependencies": {
