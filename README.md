@@ -23,6 +23,22 @@ npm install @TinycellCorp/cheatjs
 <script src="https://cdn.jsdelivr.net/npm/@TinycellCorp/cheatjs/cheat.js"></script>
 ```
 
+## 빠른 시작
+
+```typescript
+// 1. side-effect import (전역 cheat 객체 등록)
+import "@TinycellCorp/cheatjs";
+
+// 2. 직접 호출 (권장)
+if (cheat) {
+    cheat({ '버튼명': () => console.log('클릭!') });
+}
+```
+
+**핵심 포인트**:
+- `import "@TinycellCorp/cheatjs"` - side-effect import로 전역 `cheat` 객체 등록
+- `if (cheat)` - 프로덕션에서 미로드 시 안전하게 처리 (tree-shaking 등으로 제외된 경우)
+
 ## 사용법
 
 ```javascript
@@ -86,9 +102,10 @@ cheat.list()              // 명령어 목록 출력
 
 npm 패키지에 TypeScript 타입 정의(`cheat.d.ts`)가 포함되어 있습니다.
 
-## postMessage
+## 고급: postMessage API
 
-cheat객체의 의존성 제거를 위한 이벤트 기반 제어
+iframe이나 웹뷰 환경에서 `cheat` 객체에 직접 접근할 수 없을 때 사용합니다.
+대부분의 경우 위의 직접 호출 방식을 권장합니다.
 
 
 
