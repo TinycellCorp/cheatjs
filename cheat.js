@@ -643,7 +643,12 @@
     }
 
     // 데스크탑 Shift+Click 제스처
+    function isInEditor() {
+        return typeof CC_EDITOR !== 'undefined' && CC_EDITOR === true;
+    }
+
     function setupDesktopGesture() {
+        if (isInEditor()) return;  // 에디터에서는 제스쳐 비활성화
         document.addEventListener('mousedown', function (e) {
             if (e.shiftKey && !e.ctrlKey && !e.altKey) {
                 e.preventDefault();
@@ -656,6 +661,7 @@
     // 모바일 트리플 탭 제스처 (같은 위치에서만)
     var resetTapCount = null; // hide()에서 호출할 리셋 함수
     function setupMobileGesture() {
+        if (isInEditor()) return;  // 에디터에서는 제스쳐 비활성화
         var tapCount = 0;
         var tapTimer = null;
         var firstTapX = 0;
