@@ -7,8 +7,28 @@ declare global {
     // 직접 호출 API 타입
     // ========================================================
 
+    /** 허용되는 지속 스타일 속성 */
+    interface CheatPersistentStyles {
+        backgroundColor?: string;
+        color?: string;
+        borderColor?: string;
+        borderWidth?: string;
+        borderStyle?: string;
+        opacity?: string;
+        boxShadow?: string;
+        outline?: string;
+        textDecoration?: string;
+        fontWeight?: string;
+        fontStyle?: string;
+    }
+
+    /** 버튼 반환값: 지속 상태 제어 */
+    type CheatButtonState = boolean | Partial<CheatPersistentStyles>;
+
     /** 액션: 함수 또는 [함수, 설명] 튜플 */
-    type CheatAction = (() => void) | [() => void, string];
+    type CheatAction =
+        | (() => void | CheatButtonState)
+        | [() => void | CheatButtonState, string];
 
     /** 액션맵: { '버튼명': 액션 } */
     type CheatActionMap = Record<string, CheatAction>;
@@ -18,10 +38,11 @@ declare global {
 
     /** 내부 액션 데이터 구조 */
     interface CheatActionData {
-        callback: () => void;
+        callback: () => void | CheatButtonState;
         desc: string | null;
         btn: HTMLButtonElement | null;
         group: string;
+        persistentStyles: Partial<CheatPersistentStyles> | null;
     }
 
     /** 내부 그룹 데이터 구조 */

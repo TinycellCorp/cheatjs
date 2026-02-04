@@ -90,6 +90,7 @@ cheat.statusline(callback)      // 상태라인 설정 (callback: opt => ['v1.0.
 cheat.statusline.refresh()      // 상태라인 갱신 (콜백 재실행)
 
 cheat.add(name, action, groupKey?)  // 명령어 추가 (groupKey 생략 시 GLOBAL)
+                                    // action의 반환값으로 버튼 상태 제어 가능 (아래 참고)
 cheat.remove(name)                  // 명령어 삭제
 cheat.clear()                       // 전체 삭제
 
@@ -98,6 +99,41 @@ cheat.removeGroup(name)   // 그룹 삭제
 
 cheat.list()              // 명령어 목록 출력
 ```
+
+## 버튼 상태 제어 (반환값)
+
+`add()`로 등록한 콜백의 반환값으로 버튼의 시각적 상태를 제어할 수 있습니다.
+
+| 반환값 | 동작 |
+|--------|------|
+| `undefined` (기본) | 기존 동작 (성공 피드백 후 원래색 복귀) |
+| `true` | 토글 ON - 초록 배경 지속 |
+| `false` | 토글 OFF - 기본 상태로 복귀 |
+| `{ backgroundColor: '...' }` | 커스텀 스타일 지속 적용 |
+
+```javascript
+// 토글 버튼
+var godMode = false;
+cheat.add('무적 토글', function() {
+    godMode = !godMode;
+    player.invincible = godMode;
+    return godMode;  // true → ON, false → OFF
+});
+
+// 커스텀 색상 (단계별)
+var speedLevel = 0;
+var colors = ['', 'rgba(255, 193, 7, 0.3)', 'rgba(255, 152, 0, 0.3)', 'rgba(244, 67, 54, 0.3)'];
+cheat.add('속도 증가', function() {
+    speedLevel = (speedLevel + 1) % 4;
+    player.speed = [1, 2, 4, 8][speedLevel];
+    if (speedLevel === 0) return false;
+    return { backgroundColor: colors[speedLevel] };
+});
+```
+
+허용되는 스타일 속성: `backgroundColor`, `color`, `borderColor`, `borderWidth`, `borderStyle`, `opacity`, `boxShadow`, `outline`, `textDecoration`, `fontWeight`, `fontStyle`
+
+> 레이아웃에 영향을 주는 속성(padding, margin, width 등)은 무시됩니다.
 
 ## 타입 지원
 

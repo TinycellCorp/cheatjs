@@ -10,6 +10,7 @@
 
 
 
+
 /**
  * Cheat Utility - 게임 엔진 독립적인 치트 UI (바텀시트)
  *
@@ -200,6 +201,63 @@
         for (var key in styles) {
             el.style[key] = styles[key];
         }
+    }
+
+    // 지속 스타일 허용 속성 (레이아웃 영향 없는 속성만)
+    var ALLOWED_PERSISTENT_STYLES = [
+        'backgroundColor', 'color', 'borderColor', 'borderWidth', 'borderStyle',
+        'opacity', 'boxShadow', 'outline', 'textDecoration', 'fontWeight', 'fontStyle'
+    ];
+
+    // 토글 ON 기본 스타일
+    var TOGGLE_ON_STYLES = {
+        backgroundColor: 'rgba(76, 175, 80, 0.3)'
+    };
+
+    // 콜백 반환값을 지속 스타일 객체로 변환
+    function resolveReturnValue(result) {
+        if (result === undefined || result === null) return undefined;
+        if (result === true) return TOGGLE_ON_STYLES;
+        if (result === false) return null;
+        if (typeof result === 'object') {
+            var filtered = {};
+            var hasProps = false;
+            for (var i = 0; i < ALLOWED_PERSISTENT_STYLES.length; i++) {
+                var prop = ALLOWED_PERSISTENT_STYLES[i];
+                if (result.hasOwnProperty(prop)) {
+                    filtered[prop] = result[prop];
+                    hasProps = true;
+                }
+            }
+            return hasProps ? filtered : undefined;
+        }
+        return undefined;
+    }
+
+    // 버튼에 기본 스타일 + 지속 스타일 적용
+    function applyPersistentStyles(btn, persistentStyles) {
+        for (var i = 0; i < ALLOWED_PERSISTENT_STYLES.length; i++) {
+            btn.style[ALLOWED_PERSISTENT_STYLES[i]] = '';
+        }
+        btn.style.backgroundColor = STYLES.actionBtn.backgroundColor;
+        btn.style.color = STYLES.actionBtn.color;
+        if (persistentStyles) {
+            for (var key in persistentStyles) {
+                if (persistentStyles.hasOwnProperty(key)) {
+                    btn.style[key] = persistentStyles[key];
+                }
+            }
+        }
+    }
+
+    // 버튼 요소로 actionData 찾기
+    function findActionByBtn(btn) {
+        for (var name in actions) {
+            if (actions.hasOwnProperty(name) && actions[name].btn === btn) {
+                return actions[name];
+            }
+        }
+        return null;
     }
 
     // 스크롤바 스타일 주입
@@ -531,29 +589,61 @@
             btn.appendChild(descSpan);
         }
 
+        var feedbackTimer = null;
+
         btn.onclick = function () {
+            if (feedbackTimer) {
+                clearTimeout(feedbackTimer);
+                feedbackTimer = null;
+            }
+
             try {
-                callback();
+                var result = callback();
+                var resolved = resolveReturnValue(result);
+
+                // 지속 상태 업데이트
+                if (resolved !== undefined) {
+                    var actionData = findActionByBtn(btn);
+                    if (actionData) {
+                        actionData.persistentStyles = resolved;
+                    }
+                }
+
                 // 성공 피드백
                 btn.style.backgroundColor = 'rgba(76, 175, 80, 0.4)';
-                setTimeout(function () {
-                    btn.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
+                feedbackTimer = setTimeout(function () {
+                    feedbackTimer = null;
+                    var actionData = findActionByBtn(btn);
+                    var persistent = actionData ? actionData.persistentStyles : null;
+                    applyPersistentStyles(btn, persistent);
                 }, 200);
             } catch (e) {
                 console.error('[Cheat] 액션 오류:', e);
                 btn.style.backgroundColor = 'rgba(244, 67, 54, 0.4)';
-                setTimeout(function () {
-                    btn.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
+                feedbackTimer = setTimeout(function () {
+                    feedbackTimer = null;
+                    var actionData = findActionByBtn(btn);
+                    var persistent = actionData ? actionData.persistentStyles : null;
+                    applyPersistentStyles(btn, persistent);
                 }, 200);
             }
         };
 
         // 호버 효과
         btn.onmouseenter = function () {
-            btn.style.backgroundColor = 'rgba(255, 255, 255, 0.2)';
+            var actionData = findActionByBtn(btn);
+            var persistent = actionData ? actionData.persistentStyles : null;
+            if (persistent && persistent.backgroundColor) {
+                btn.style.boxShadow = '0 0 0 2px rgba(255, 255, 255, 0.3)';
+            } else {
+                btn.style.backgroundColor = 'rgba(255, 255, 255, 0.2)';
+            }
         };
         btn.onmouseleave = function () {
-            btn.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
+            var actionData = findActionByBtn(btn);
+            var persistent = actionData ? actionData.persistentStyles : null;
+            btn.style.boxShadow = '';
+            applyPersistentStyles(btn, persistent);
         };
 
         group.content.appendChild(btn);
@@ -781,7 +871,8 @@
             callback: callback,
             desc: desc,
             btn: btn,
-            group: group
+            group: group,
+            persistentStyles: null
         };
 
         // groups commands에 추가
