@@ -581,6 +581,14 @@
             }
         }
 
+        // activeTab이 유효하지 않으면 첫 번째 탭으로 전환
+        if (!ui.activeTab || !groups[ui.activeTab]) {
+            var firstGroup = Object.keys(groups)[0];
+            if (firstGroup) {
+                selectTab(firstGroup);
+            }
+        }
+
         var target = container || document.body;
         if (!ui.overlay.parentNode && target) {
             target.appendChild(ui.overlay);
@@ -886,6 +894,16 @@
 
         // 그룹 자체 삭제 (아직 남아있다면)
         delete groups[groupKey];
+
+        // 삭제된 그룹이 activeTab이면 다른 탭으로 전환
+        if (ui && ui.activeTab === groupKey) {
+            var firstGroup = Object.keys(groups)[0];
+            if (firstGroup) {
+                selectTab(firstGroup);
+            } else {
+                ui.activeTab = null;
+            }
+        }
 
         log('[Cheat] 그룹 삭제됨: "' + groupKey + '"');
     }
