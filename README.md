@@ -29,21 +29,22 @@ npm install @TinycellCorp/cheatjs
 // 1. side-effect import (전역 cheat 객체 등록)
 import "@TinycellCorp/cheatjs";
 
-// 2. 직접 호출 (권장)
+// 2. 직접 호출
 if (cheat) {
-    cheat({ '버튼명': () => console.log('클릭!') });
+    cheat.statusline(opt => ['v1.0.0', 'hi5']);
+    cheat.add('버튼명', () => console.log('클릭!'));
 }
 ```
 
 **핵심 포인트**:
 - `import "@TinycellCorp/cheatjs"` - side-effect import로 전역 `cheat` 객체 등록
 - `if (cheat)` - 프로덕션에서 미로드 시 안전하게 처리 (tree-shaking 등으로 제외된 경우)
+- `cheat()` 초기화 없이 `add()`, `addGroup()` 등 개별 API를 바로 사용 가능
 
 ## 사용법
 
 ```javascript
-// 초기화
-cheat();
+// 초기화 (선택사항 - 액션을 한번에 등록할 때)
 cheat({ '버튼명': () => console.log('클릭!') });
 cheat({ '버튼명': () => {} }, document.body);
 
