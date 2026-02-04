@@ -7,6 +7,7 @@
 
 
 
+
 /**
  * Cheat Utility - 게임 엔진 독립적인 치트 UI (바텀시트)
  *
@@ -569,6 +570,15 @@
         if (!ui) createUI();
         // hide 후 재표시 시 리스너 재등록
         registerDocumentListeners();
+
+        // UI 생성 전에 등록된 액션들의 버튼 소급 생성
+        for (var name in actions) {
+            if (actions.hasOwnProperty(name) && !actions[name].btn) {
+                var a = actions[name];
+                var btn = addActionButton(name, a.callback, a.desc, a.group);
+                a.btn = btn;
+            }
+        }
 
         var target = container || document.body;
         if (!ui.overlay.parentNode && target) {
