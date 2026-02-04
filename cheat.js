@@ -865,21 +865,25 @@
             return;
         }
 
+        // 탭과 컨텐츠 참조를 미리 저장 (remove()가 그룹을 삭제할 수 있으므로)
+        var tab = groups[groupKey].tab;
+        var content = groups[groupKey].content;
+
         // 그룹의 모든 명령어 삭제 (복사본 사용)
         var commands = groups[groupKey].commands.slice();
         for (var i = 0; i < commands.length; i++) {
             remove(commands[i]);
         }
 
-        // 탭과 컨텐츠 삭제
-        if (groups[groupKey].tab && groups[groupKey].tab.parentNode) {
-            groups[groupKey].tab.parentNode.removeChild(groups[groupKey].tab);
+        // 탭과 컨텐츠 삭제 (remove()에서 이미 삭제했을 수 있으므로 체크)
+        if (tab && tab.parentNode) {
+            tab.parentNode.removeChild(tab);
         }
-        if (groups[groupKey].content && groups[groupKey].content.parentNode) {
-            groups[groupKey].content.parentNode.removeChild(groups[groupKey].content);
+        if (content && content.parentNode) {
+            content.parentNode.removeChild(content);
         }
 
-        // 그룹 자체 삭제
+        // 그룹 자체 삭제 (아직 남아있다면)
         delete groups[groupKey];
 
         log('[Cheat] 그룹 삭제됨: "' + groupKey + '"');
