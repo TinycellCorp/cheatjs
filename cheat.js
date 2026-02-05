@@ -24,6 +24,7 @@
 
 
 
+
 /**
  * Cheat Utility - 게임 엔진 독립적인 치트 UI (바텀시트)
  *
@@ -213,6 +214,8 @@
             display: 'flex',
             alignItems: 'center',
             flexShrink: '0',
+            height: '56px',
+            boxSizing: 'border-box',
             borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
         },
         tabModeToggle: {
