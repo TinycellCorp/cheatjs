@@ -24,11 +24,13 @@
     "release:patch": "npm version patch -m \"release: v%s\" && git push && git push --tags && npm publish",
     "release:minor": "npm version minor -m \"release: v%s\" && git push && git push --tags && npm publish",
     "release:major": "npm version major -m \"release: v%s\" && git push && git push --tags && npm publish",
-    "copy-to": "npm run build && node scripts/copy-to.js"
+    "copy-to": "npm run build && node scripts/copy-to.js",
+    "dev": "vite dev --config dev/vite.config.js"
   },
   "devDependencies": {
     "terser": "^5.37.0",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vite": "^7.3.1"
   },
   "repository": {
     "type": "git",

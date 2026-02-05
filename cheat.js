@@ -11,6 +11,19 @@
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
 /**
  * Cheat Utility - 게임 엔진 독립적인 치트 UI (바텀시트)
  *
@@ -59,6 +72,8 @@
     var statuslineCallback = null; // 상태라인 콜백 함수
     var GLOBAL_GROUP = 'GLOBAL';
     var debugMode = false; // 디버그 로그 출력 여부
+    var tabMode = 'tab'; // 'tab' | 'dropdown'
+    var dropdownOpen = false; // 드롭다운 메뉴 열림 상태
 
     // 디버그 로그 헬퍼
     function log() {
@@ -145,16 +160,16 @@
             gap: '8px',
             padding: '12px 16px',
             overflowX: 'auto',
-            flexShrink: '0',
-            borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+            flex: '1',
+            minWidth: '0',
             touchAction: 'pan-x'
         },
         tab: {
             padding: '8px 16px',
-            backgroundColor: 'rgba(255, 255, 255, 0.1)',
+            backgroundColor: 'transparent',
             border: 'none',
             borderRadius: '20px',
-            color: 'rgba(255, 255, 255, 0.6)',
+            color: 'rgba(255, 255, 255, 0.45)',
             fontSize: '13px',
             fontWeight: '500',
             cursor: 'pointer',
@@ -169,7 +184,7 @@
         },
         actionBtn: {
             padding: '12px',
-            backgroundColor: 'rgba(255, 255, 255, 0.1)',
+            backgroundColor: 'rgba(255, 255, 255, 0.06)',
             border: 'none',
             borderRadius: '8px',
             color: '#fff',
@@ -182,7 +197,7 @@
             alignItems: 'center',
             justifyContent: 'center',
             gap: '4px',
-            minHeight: '48px',
+            height: '56px',
             touchAction: 'manipulation'
         },
         actionBtnName: {
@@ -193,6 +208,73 @@
             fontSize: '11px',
             color: 'rgba(255, 255, 255, 0.6)',
             lineHeight: '1.2'
+        },
+        tabBarWrapper: {
+            display: 'flex',
+            alignItems: 'center',
+            flexShrink: '0',
+            borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
+        },
+        tabModeToggle: {
+            background: 'none',
+            border: 'none',
+            color: 'rgba(255, 255, 255, 0.5)',
+            fontSize: '16px',
+            padding: '8px 16px',
+            cursor: 'pointer',
+            flexShrink: '0',
+            lineHeight: '1'
+        },
+        dropdown: {
+            flex: '1',
+            position: 'relative',
+            padding: '12px 0 12px 16px'
+        },
+        dropdownTrigger: {
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            width: '100%',
+            padding: '8px 16px',
+            backgroundColor: 'rgba(255, 255, 255, 0.06)',
+            border: 'none',
+            borderRadius: '8px',
+            color: 'rgba(255, 255, 255, 0.8)',
+            fontSize: '13px',
+            fontWeight: '500',
+            cursor: 'pointer',
+            boxSizing: 'border-box'
+        },
+        dropdownMenu: {
+            position: 'absolute',
+            top: '100%',
+            left: '16px',
+            right: '0',
+            backgroundColor: 'rgba(40, 40, 40, 0.98)',
+            borderRadius: '8px',
+            boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
+            zIndex: '10',
+            overflow: 'hidden',
+            display: 'none'
+        },
+        dropdownItem: {
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            width: '100%',
+            padding: '10px 16px',
+            backgroundColor: 'transparent',
+            border: 'none',
+            color: 'rgba(255, 255, 255, 0.7)',
+            fontSize: '13px',
+            cursor: 'pointer',
+            textAlign: 'left',
+            boxSizing: 'border-box'
+        },
+        dropdownItemActive: {
+            backgroundColor: 'rgba(255, 255, 255, 0.1)',
+            color: '#fff',
+            fontWeight: '500'
         }
     };
 
@@ -241,6 +323,7 @@
         }
         btn.style.backgroundColor = STYLES.actionBtn.backgroundColor;
         btn.style.color = STYLES.actionBtn.color;
+        btn.style.border = 'none';
         if (persistentStyles) {
             for (var key in persistentStyles) {
                 if (persistentStyles.hasOwnProperty(key)) {
@@ -291,9 +374,12 @@
             '#cheat-tabbar::-webkit-scrollbar {',
             '  display: none;',
             '}',
+            '#cheat-bottomsheet button {',
+            '  outline: none !important;',
+            '  -webkit-tap-highlight-color: transparent;',
+            '}',
             '#cheat-bottomsheet button:active {',
-            '  background-color: rgba(255, 255, 255, 0.25) !important;',
-            '  transform: scale(0.98);',
+            '  opacity: 0.8;',
             '}'
         ].join('\n');
         document.head.appendChild(style);
@@ -409,11 +495,75 @@
 
         registerDocumentListeners();
 
+        // localStorage에서 탭 모드 로드
+        var savedMode = null;
+        try { savedMode = localStorage.getItem('cheat-tab-mode'); } catch (e) {}
+        if (savedMode === 'tab' || savedMode === 'dropdown') {
+            tabMode = savedMode;
+        }
+
+        // 탭바 래퍼
+        var tabBarWrapper = document.createElement('div');
+        tabBarWrapper.id = 'cheat-tabbar-wrapper';
+        applyStyles(tabBarWrapper, STYLES.tabBarWrapper);
+
         // 탭바
         var tabBar = document.createElement('div');
         tabBar.id = 'cheat-tabbar';
         applyStyles(tabBar, STYLES.tabBar);
-        bottomSheet.appendChild(tabBar);
+        tabBarWrapper.appendChild(tabBar);
+
+        // 커스텀 드롭다운
+        var dropdownEl = document.createElement('div');
+        applyStyles(dropdownEl, STYLES.dropdown);
+
+        var dropdownTrigger = document.createElement('button');
+        applyStyles(dropdownTrigger, STYLES.dropdownTrigger);
+        dropdownTrigger.textContent = '-';
+        dropdownTrigger.onclick = function () {
+            toggleDropdownMenu();
+        };
+        dropdownEl.appendChild(dropdownTrigger);
+
+        var dropdownMenu = document.createElement('div');
+        applyStyles(dropdownMenu, STYLES.dropdownMenu);
+        dropdownEl.appendChild(dropdownMenu);
+
+        tabBarWrapper.appendChild(dropdownEl);
+
+        // 토글 버튼
+        var toggleBtn = document.createElement('button');
+        applyStyles(toggleBtn, STYLES.tabModeToggle);
+        toggleBtn.textContent = tabMode === 'tab' ? '☰' : '▦';
+        toggleBtn.title = tabMode === 'tab' ? '드롭다운으로 전환' : '탭으로 전환';
+        toggleBtn.onclick = function () {
+            setTabMode(tabMode === 'tab' ? 'dropdown' : 'tab');
+        };
+        tabBarWrapper.appendChild(toggleBtn);
+
+        // 현재 모드에 따라 표시/숨김
+        tabBar.style.display = tabMode === 'tab' ? 'flex' : 'none';
+        dropdownEl.style.display = tabMode === 'dropdown' ? 'block' : 'none';
+
+        // 드롭다운 외부 클릭 시 닫기
+        bottomSheet.addEventListener('click', function (e) {
+            if (!dropdownOpen) return;
+            // 드롭다운 영역 내 클릭이 아닌 경우 닫기
+            var target = e.target;
+            var isInDropdown = false;
+            while (target && target !== bottomSheet) {
+                if (target === dropdownEl) {
+                    isInDropdown = true;
+                    break;
+                }
+                target = target.parentNode;
+            }
+            if (!isInDropdown) {
+                closeDropdownMenu();
+            }
+        });
+
+        bottomSheet.appendChild(tabBarWrapper);
 
         // 컨텐츠 영역
         var content = document.createElement('div');
@@ -471,7 +621,12 @@
             overlay: overlay,
             bottomSheet: bottomSheet,
             dragHandle: dragHandle,
+            tabBarWrapper: tabBarWrapper,
             tabBar: tabBar,
+            dropdownEl: dropdownEl,
+            dropdownTrigger: dropdownTrigger,
+            dropdownMenu: dropdownMenu,
+            toggleBtn: toggleBtn,
             content: content,
             activeTab: null
         };
@@ -487,6 +642,78 @@
         listenersRegistered = true;
     }
 
+    // 탭/드롭다운 모드 전환
+    function setTabMode(mode) {
+        tabMode = mode;
+        try { localStorage.setItem('cheat-tab-mode', mode); } catch (e) {}
+
+        if (!ui) return;
+
+        if (mode === 'tab') {
+            ui.tabBar.style.display = 'flex';
+            ui.dropdownEl.style.display = 'none';
+            ui.toggleBtn.textContent = '☰';
+            ui.toggleBtn.title = '드롭다운으로 전환';
+        } else {
+            ui.tabBar.style.display = 'none';
+            ui.dropdownEl.style.display = 'block';
+            ui.toggleBtn.textContent = '▦';
+            ui.toggleBtn.title = '탭으로 전환';
+            updateDropdownTrigger();
+        }
+
+        // 드롭다운 메뉴 닫기
+        closeDropdownMenu();
+    }
+
+    // 드롭다운 트리거 텍스트 업데이트
+    function updateDropdownTrigger() {
+        if (!ui || !ui.dropdownTrigger) return;
+        var label = ui.activeTab || '-';
+        var arrow = dropdownOpen ? ' \u25B4' : ' \u25BE';
+        ui.dropdownTrigger.textContent = label + arrow;
+    }
+
+    // 드롭다운 메뉴 열기/닫기 토글
+    function toggleDropdownMenu() {
+        if (dropdownOpen) {
+            closeDropdownMenu();
+        } else {
+            openDropdownMenu();
+        }
+    }
+
+    // 드롭다운 메뉴 열기
+    function openDropdownMenu() {
+        if (!ui || !ui.dropdownMenu) return;
+        dropdownOpen = true;
+        ui.dropdownMenu.style.display = 'block';
+        updateDropdownTrigger();
+    }
+
+    // 드롭다운 메뉴 닫기
+    function closeDropdownMenu() {
+        if (!ui || !ui.dropdownMenu) return;
+        dropdownOpen = false;
+        ui.dropdownMenu.style.display = 'none';
+        updateDropdownTrigger();
+    }
+
+    // 드롭다운 아이템 활성 상태 업데이트
+    function updateDropdownItemsActive() {
+        if (!ui) return;
+        for (var key in groups) {
+            if (groups[key].dropdownItem) {
+                if (key === ui.activeTab) {
+                    applyStyles(groups[key].dropdownItem, STYLES.dropdownItem);
+                    applyStyles(groups[key].dropdownItem, STYLES.dropdownItemActive);
+                } else {
+                    applyStyles(groups[key].dropdownItem, STYLES.dropdownItem);
+                }
+            }
+        }
+    }
+
     // 탭 선택
     function selectTab(groupKey) {
         if (!ui) return;
@@ -494,8 +721,8 @@
         // 모든 탭 비활성화
         var tabs = ui.tabBar.querySelectorAll('button');
         tabs.forEach(function (tab) {
-            tab.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
-            tab.style.color = 'rgba(255, 255, 255, 0.6)';
+            tab.style.backgroundColor = 'transparent';
+            tab.style.color = 'rgba(255, 255, 255, 0.45)';
         });
 
         // 모든 컨텐츠 숨김
@@ -508,8 +735,8 @@
         // 선택된 탭 활성화
         if (groups[groupKey]) {
             if (groups[groupKey].tab) {
-                groups[groupKey].tab.style.backgroundColor = 'rgba(255, 255, 255, 0.9)';
-                groups[groupKey].tab.style.color = '#202020';
+                groups[groupKey].tab.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
+                groups[groupKey].tab.style.color = '#fff';
             }
             if (groups[groupKey].content) {
                 groups[groupKey].content.style.display = 'grid';
@@ -517,6 +744,11 @@
         }
 
         ui.activeTab = groupKey;
+
+        // 드롭다운 트리거 텍스트 및 아이템 활성 상태 업데이트
+        updateDropdownTrigger();
+        updateDropdownItemsActive();
+        closeDropdownMenu();
     }
 
     // 그룹(탭) 컨테이너 생성
@@ -534,9 +766,34 @@
         applyStyles(contentDiv, STYLES.tabContent);
         contentDiv.style.display = 'none'; // 기본 숨김
 
+        // 드롭다운 아이템 생성
+        var dropdownItem = document.createElement('button');
+        applyStyles(dropdownItem, STYLES.dropdownItem);
+        dropdownItem.textContent = groupKey;
+        dropdownItem.onclick = function () {
+            selectTab(groupKey);
+        };
+        dropdownItem.onmouseenter = function () {
+            var isActive = ui && ui.activeTab === groupKey;
+            if (!isActive) {
+                dropdownItem.style.backgroundColor = 'rgba(255, 255, 255, 0.06)';
+                dropdownItem.style.color = '#fff';
+            }
+        };
+        dropdownItem.onmouseleave = function () {
+            var isActive = ui && ui.activeTab === groupKey;
+            if (isActive) {
+                applyStyles(dropdownItem, STYLES.dropdownItemActive);
+            } else {
+                dropdownItem.style.backgroundColor = 'transparent';
+                dropdownItem.style.color = STYLES.dropdownItem.color;
+            }
+        };
+
         return {
             tab: tab,
-            content: contentDiv
+            content: contentDiv,
+            dropdownItem: dropdownItem
         };
     }
 
@@ -547,7 +804,8 @@
                 desc: groupDesc || null,
                 commands: [],
                 tab: null,
-                content: null
+                content: null,
+                dropdownItem: null
             };
         }
 
@@ -555,8 +813,10 @@
             var groupUI = createGroupContainer(groupKey, groups[groupKey].desc);
             groups[groupKey].tab = groupUI.tab;
             groups[groupKey].content = groupUI.content;
+            groups[groupKey].dropdownItem = groupUI.dropdownItem;
             ui.tabBar.appendChild(groupUI.tab);
             ui.content.appendChild(groupUI.content);
+            ui.dropdownMenu.appendChild(groupUI.dropdownItem);
 
             // 첫 번째 탭이면 자동 선택
             if (!ui.activeTab) {
@@ -633,16 +893,13 @@
         btn.onmouseenter = function () {
             var actionData = findActionByBtn(btn);
             var persistent = actionData ? actionData.persistentStyles : null;
-            if (persistent && persistent.backgroundColor) {
-                btn.style.boxShadow = '0 0 0 2px rgba(255, 255, 255, 0.3)';
-            } else {
-                btn.style.backgroundColor = 'rgba(255, 255, 255, 0.2)';
+            if (!persistent || !persistent.backgroundColor) {
+                btn.style.backgroundColor = 'rgba(255, 255, 255, 0.10)';
             }
         };
         btn.onmouseleave = function () {
             var actionData = findActionByBtn(btn);
             var persistent = actionData ? actionData.persistentStyles : null;
-            btn.style.boxShadow = '';
             applyPersistentStyles(btn, persistent);
         };
 
@@ -910,6 +1167,9 @@
                 if (groups[group].content && groups[group].content.parentNode) {
                     groups[group].content.parentNode.removeChild(groups[group].content);
                 }
+                if (groups[group].dropdownItem && groups[group].dropdownItem.parentNode) {
+                    groups[group].dropdownItem.parentNode.removeChild(groups[group].dropdownItem);
+                }
                 delete groups[group];
             }
         }
@@ -942,7 +1202,8 @@
                 desc: groupDesc,
                 commands: [],
                 tab: null,
-                content: null
+                content: null,
+                dropdownItem: null
             };
         } else {
             groups[groupKey].desc = groupDesc;
@@ -966,9 +1227,10 @@
             return;
         }
 
-        // 탭과 컨텐츠 참조를 미리 저장 (remove()가 그룹을 삭제할 수 있으므로)
+        // 탭, 컨텐츠, 드롭다운 아이템 참조를 미리 저장 (remove()가 그룹을 삭제할 수 있으므로)
         var tab = groups[groupKey].tab;
         var content = groups[groupKey].content;
+        var dropdownItem = groups[groupKey].dropdownItem;
 
         // 그룹의 모든 명령어 삭제 (복사본 사용)
         var commands = groups[groupKey].commands.slice();
@@ -976,12 +1238,15 @@
             remove(commands[i]);
         }
 
-        // 탭과 컨텐츠 삭제 (remove()에서 이미 삭제했을 수 있으므로 체크)
+        // 탭, 컨텐츠, 드롭다운 아이템 삭제 (remove()에서 이미 삭제했을 수 있으므로 체크)
         if (tab && tab.parentNode) {
             tab.parentNode.removeChild(tab);
         }
         if (content && content.parentNode) {
             content.parentNode.removeChild(content);
+        }
+        if (dropdownItem && dropdownItem.parentNode) {
+            dropdownItem.parentNode.removeChild(dropdownItem);
         }
 
         // 그룹 자체 삭제 (아직 남아있다면)
@@ -994,6 +1259,7 @@
                 selectTab(firstGroup);
             } else {
                 ui.activeTab = null;
+                updateDropdownTrigger();
             }
         }
 
@@ -1009,7 +1275,7 @@
             }
         }
 
-        // 모든 탭과 컨텐츠 제거
+        // 모든 탭, 컨텐츠, 드롭다운 아이템 제거
         for (var groupKey in groups) {
             if (groups.hasOwnProperty(groupKey)) {
                 if (groups[groupKey].tab && groups[groupKey].tab.parentNode) {
@@ -1018,12 +1284,16 @@
                 if (groups[groupKey].content && groups[groupKey].content.parentNode) {
                     groups[groupKey].content.parentNode.removeChild(groups[groupKey].content);
                 }
+                if (groups[groupKey].dropdownItem && groups[groupKey].dropdownItem.parentNode) {
+                    groups[groupKey].dropdownItem.parentNode.removeChild(groups[groupKey].dropdownItem);
+                }
             }
         }
 
         // activeTab 초기화
         if (ui) {
             ui.activeTab = null;
+            updateDropdownTrigger();
         }
 
         // 초기화
