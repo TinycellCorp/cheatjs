@@ -51,6 +51,7 @@ declare global {
         commands: string[];
         tab: HTMLButtonElement | null;
         content: HTMLDivElement | null;
+        dropdownItem: HTMLButtonElement | null;
     }
 
     /** 상태라인 옵션 (향후 확장용) */
