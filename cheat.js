@@ -25,6 +25,11 @@
 
 
 
+
+
+
+
+
 /**
  * Cheat Utility - 게임 엔진 독립적인 치트 UI (바텀시트)
  *
@@ -669,12 +674,46 @@
         closeDropdownMenu();
     }
 
-    // 드롭다운 트리거 텍스트 업데이트
+    // 드롭다운 트리거 업데이트
     function updateDropdownTrigger() {
         if (!ui || !ui.dropdownTrigger) return;
         var label = ui.activeTab || '-';
         var arrow = dropdownOpen ? ' \u25B4' : ' \u25BE';
-        ui.dropdownTrigger.textContent = label + arrow;
+        var count = Object.keys(groups).length;
+
+        // DOM 재구성
+        ui.dropdownTrigger.textContent = '';
+
+        var labelSpan = document.createElement('span');
+        labelSpan.style.pointerEvents = 'none';
+        labelSpan.textContent = label;
+        ui.dropdownTrigger.appendChild(labelSpan);
+
+        var rightSpan = document.createElement('span');
+        rightSpan.style.display = 'flex';
+        rightSpan.style.alignItems = 'center';
+        rightSpan.style.gap = '6px';
+        rightSpan.style.pointerEvents = 'none';
+
+        if (count > 1) {
+            var badge = document.createElement('span');
+            badge.textContent = '' + count;
+            badge.style.fontSize = '11px';
+            badge.style.lineHeight = '1';
+            badge.style.padding = '2px 6px';
+            badge.style.borderRadius = '10px';
+            badge.style.backgroundColor = 'rgba(255, 255, 255, 0.12)';
+            badge.style.color = 'rgba(255, 255, 255, 0.5)';
+            rightSpan.appendChild(badge);
+        }
+
+        var arrowSpan = document.createElement('span');
+        arrowSpan.textContent = arrow;
+        arrowSpan.style.fontSize = '10px';
+        arrowSpan.style.color = 'rgba(255, 255, 255, 0.4)';
+        rightSpan.appendChild(arrowSpan);
+
+        ui.dropdownTrigger.appendChild(rightSpan);
     }
 
     // 드롭다운 메뉴 열기/닫기 토글
@@ -824,6 +863,9 @@
             // 첫 번째 탭이면 자동 선택
             if (!ui.activeTab) {
                 selectTab(groupKey);
+            } else {
+                // 뱃지 카운트 갱신
+                updateDropdownTrigger();
             }
         }
 
