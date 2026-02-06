@@ -33,6 +33,7 @@
 
 
 
+
 /**
  * Cheat Utility - 게임 엔진 독립적인 치트 UI (바텀시트)
  *
@@ -305,7 +306,7 @@
 
     // 토글 ON 기본 스타일
     var TOGGLE_ON_STYLES = {
-        backgroundColor: 'rgba(76, 175, 80, 0.3)'
+        backgroundColor: 'rgba(33, 150, 243, 0.3)'  // 파란색 (성공 피드백 초록과 구분)
     };
 
     // 콜백 반환값을 지속 스타일 객체로 변환
@@ -954,16 +955,16 @@
                     if (actionData) {
                         actionData.persistentStyles = resolved;
                     }
+                    // 토글/커스텀 스타일: 바로 적용 (성공 피드백 생략)
+                    applyPersistentStyles(btn, resolved);
+                } else {
+                    // 일반 버튼: 성공 피드백 (초록) 후 복귀
+                    btn.style.backgroundColor = 'rgba(76, 175, 80, 0.4)';
+                    feedbackTimer = setTimeout(function () {
+                        feedbackTimer = null;
+                        applyPersistentStyles(btn, null);
+                    }, 200);
                 }
-
-                // 성공 피드백
-                btn.style.backgroundColor = 'rgba(76, 175, 80, 0.4)';
-                feedbackTimer = setTimeout(function () {
-                    feedbackTimer = null;
-                    var actionData = findActionByBtn(btn);
-                    var persistent = actionData ? actionData.persistentStyles : null;
-                    applyPersistentStyles(btn, persistent);
-                }, 200);
             } catch (e) {
                 console.error('[Cheat] 액션 오류:', e);
                 btn.style.backgroundColor = 'rgba(244, 67, 54, 0.4)';
