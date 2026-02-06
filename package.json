@@ -25,9 +25,12 @@
     "release:minor": "npm version minor -m \"release: v%s\" && git push && git push --tags && npm publish",
     "release:major": "npm version major -m \"release: v%s\" && git push && git push --tags && npm publish",
     "copy-to": "npm run build && node scripts/copy-to.js",
-    "dev": "vite dev --config dev/vite.config.js"
+    "dev": "vite dev --config dev/vite.config.js",
+    "build:preview": "npm run build && vite build --config dev/vite.config.js",
+    "deploy:preview": "npm run build:preview && gh-pages -d dist-preview"
   },
   "devDependencies": {
+    "gh-pages": "^6.3.0",
     "terser": "^5.37.0",
     "typescript": "^5.9.3",
     "vite": "^7.3.1"

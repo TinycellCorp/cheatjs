@@ -2,85 +2,149 @@
 
 게임 엔진 독립적인 치트 UI (바텀시트)
 
-## 설치
+**[Live Preview](https://tinycellcorp.github.io/cheatjs/)**
 
-### npm (권장)
+## 설치
 
 ```shell
 npm install @TinycellCorp/cheatjs
 ```
 
-### CDN
-
-```html
-<!-- npm 패키지 기반 CDN (권장) -->
-<script src="https://cdn.jsdelivr.net/npm/@TinycellCorp/cheatjs/cheat.min.js"></script>
-
-<!-- 특정 버전 -->
-<script src="https://cdn.jsdelivr.net/npm/@TinycellCorp/cheatjs@2.0.0/cheat.min.js"></script>
-
-<!-- 원본 (디버깅용) -->
-<script src="https://cdn.jsdelivr.net/npm/@TinycellCorp/cheatjs/cheat.js"></script>
-```
+> CDN 사용도 가능하지만, GitHub Packages 기반이라 별도 설정이 필요합니다.
 
 ## 빠른 시작
 
 ```typescript
-// 1. side-effect import (전역 cheat 객체 등록)
+// side-effect import로 전역 cheat 객체 등록
 import "@TinycellCorp/cheatjs";
 
-// 2. 직접 호출
-if (cheat) {
-    cheat.statusline(opt => ['v1.0.0', 'hi5']);
-    cheat.add('버튼명', () => console.log('클릭!'));
-}
-```
+// 버튼 추가
+cheat.add('버튼명', () => console.log('클릭!'));
 
-**핵심 포인트**:
-- `import "@TinycellCorp/cheatjs"` - side-effect import로 전역 `cheat` 객체 등록
-- `if (cheat)` - 프로덕션에서 미로드 시 안전하게 처리 (tree-shaking 등으로 제외된 경우)
-- `cheat()` 초기화 없이 `add()`, `addGroup()` 등 개별 API를 바로 사용 가능
-
-## 사용법
-
-```javascript
-// 초기화 (선택사항 - 액션을 한번에 등록할 때)
-cheat({ '버튼명': () => console.log('클릭!') });
-cheat({ '버튼명': () => {} }, document.body);
-
-// 상태라인 설정 (버전/환경 정보 표시)
-cheat.statusline(opt => ['v1.0.0', 'hi5']);
-// → "v1.0.0 | hi5"
-
-// 동적 값 사용
-cheat.statusline(opt => [getVersion(), getPlatform()]);
-
-// 구분자 변경
-cheat.statusline(opt => {
-    opt.separator = ' - ';
-    return ['v1.0.0', 'hi5'];
+// 그룹으로 정리
+cheat.addGroup('Player', {
+    'God Mode': () => player.invincible = true,
+    'Add Gold': [() => player.gold += 1000, '골드 1000 추가']
 });
 
-// 상태 갱신 (콜백 재실행)
-cheat.statusline.refresh();
+// 상태라인 (버전/환경 표시)
+cheat.statusline(opt => ['v1.0.0', 'dev']);
+```
 
+**UI 열기**: Shift+Click (데스크탑) / 트리플 탭 (모바일)
+
+## API
+
+### 기본
+
+```javascript
+cheat.show()              // UI 표시
+cheat.hide()              // UI 숨김
+cheat.toggle()            // 토글
+```
+
+### 명령어 관리
+
+```javascript
+// 명령어 추가
+cheat.add(name, action)              // GLOBAL 그룹에 추가
+cheat.add(name, action, groupKey)    // 특정 그룹에 추가
+cheat.add(name, [action, desc])      // 설명 포함
+
+// 삭제
+cheat.remove(name)        // 명령어 삭제
+cheat.clear()             // 전체 삭제
+cheat.list()              // 목록 출력
+```
+
+### 그룹 관리
+
+```javascript
 // 그룹 추가
 cheat.addGroup('그룹명', {
     '버튼1': () => {},
     '버튼2': [() => {}, '설명']
 });
+
+// 설명 포함 그룹
+cheat.addGroup(['그룹명', '그룹 설명'], { ... });
+
+// 그룹 삭제
+cheat.removeGroup('그룹명');
 ```
+
+### 상태라인
+
+```javascript
+// 기본 사용
+cheat.statusline(opt => ['v1.0.0', 'dev']);
+// → "v1.0.0 | dev"
+
+// 구분자 변경
+cheat.statusline(opt => {
+    opt.separator = ' - ';
+    return ['v1.0.0', 'dev'];
+});
+
+// 동적 값 갱신
+cheat.statusline.refresh();
+```
+
+### 일괄 초기화 (선택)
+
+`cheat()` 함수로 여러 명령어를 한번에 등록할 수 있습니다. 개별 API(`add`, `addGroup`)를 사용해도 되므로 필수는 아닙니다.
+
+```javascript
+// GLOBAL 그룹에 일괄 등록
+cheat({
+    '버튼1': () => {},
+    '버튼2': [() => {}, '설명']
+});
+
+// 컨테이너 지정 (기본: document.body)
+cheat({ ... }, document.getElementById('game'));
+```
+
+## 버튼 상태 제어
+
+`add()` 콜백의 반환값으로 버튼 상태를 제어할 수 있습니다.
+
+| 반환값 | 동작 |
+|--------|------|
+| `undefined` | 기본 (성공 피드백 후 복귀) |
+| `true` | 토글 ON (초록 배경 유지) |
+| `false` | 토글 OFF (기본 상태) |
+| `{ backgroundColor: '...' }` | 커스텀 스타일 유지 |
+
+```javascript
+// 토글 버튼
+var godMode = false;
+cheat.add('무적', function() {
+    godMode = !godMode;
+    return godMode;  // true/false로 ON/OFF 표시
+});
+
+// 커스텀 색상 (단계별)
+var level = 0;
+var colors = ['', 'rgba(255,193,7,0.3)', 'rgba(255,152,0,0.3)'];
+cheat.add('속도', function() {
+    level = (level + 1) % 3;
+    return level === 0 ? false : { backgroundColor: colors[level] };
+});
+```
+
+허용 스타일: `backgroundColor`, `color`, `borderColor`, `borderWidth`, `borderStyle`, `opacity`, `boxShadow`, `outline`, `textDecoration`, `fontWeight`, `fontStyle`
 
 ## 탭/드롭다운 모드
 
-탭바 우측의 토글 버튼으로 두 가지 모드를 전환할 수 있습니다.
+탭바 우측 토글 버튼으로 모드 전환 가능합니다.
 
-| 모드 | 설명 |
-|------|------|
-| 탭 (기본) | 가로 스크롤 탭 버튼 |
-| 드롭다운 | 커스텀 드롭다운 셀렉터 |
+| 모드 | 아이콘 | 설명 |
+|------|--------|------|
+| 탭 | ☰ | 가로 스크롤 탭 (드래그/스와이프) |
+| 드롭다운 | ▦ | 셀렉터 방식 |
 
-선택한 모드는 `localStorage`에 저장되어 새로고침 후에도 유지됩니다.
+선택한 모드는 `localStorage`에 저장됩니다.
 
 ## 제스처
 
@@ -89,121 +153,51 @@ cheat.addGroup('그룹명', {
 | 데스크탑 | Shift + Click |
 | 모바일 | 트리플 탭 (같은 위치 3번) |
 
-## API
-
-```javascript
-cheat.show()              // UI 표시
-cheat.hide()              // UI 숨김
-cheat.toggle()            // 토글
-
-// 상태라인 (버전/환경 정보)
-cheat.statusline(callback)      // 상태라인 설정 (callback: opt => ['v1.0.0', 'hi5'])
-cheat.statusline.refresh()      // 상태라인 갱신 (콜백 재실행)
-
-cheat.add(name, action, groupKey?)  // 명령어 추가 (groupKey 생략 시 GLOBAL)
-                                    // action의 반환값으로 버튼 상태 제어 가능 (아래 참고)
-cheat.remove(name)                  // 명령어 삭제
-cheat.clear()                       // 전체 삭제
-
-cheat.addGroup(groupInfo, map)      // 그룹 추가 (groupInfo: string | [name, desc])
-cheat.removeGroup(name)   // 그룹 삭제
-
-cheat.list()              // 명령어 목록 출력
-```
-
-## 버튼 상태 제어 (반환값)
-
-`add()`로 등록한 콜백의 반환값으로 버튼의 시각적 상태를 제어할 수 있습니다.
-
-| 반환값 | 동작 |
-|--------|------|
-| `undefined` (기본) | 기존 동작 (성공 피드백 후 원래색 복귀) |
-| `true` | 토글 ON - 초록 배경 지속 |
-| `false` | 토글 OFF - 기본 상태로 복귀 |
-| `{ backgroundColor: '...' }` | 커스텀 스타일 지속 적용 |
-
-```javascript
-// 토글 버튼
-var godMode = false;
-cheat.add('무적 토글', function() {
-    godMode = !godMode;
-    player.invincible = godMode;
-    return godMode;  // true → ON, false → OFF
-});
-
-// 커스텀 색상 (단계별)
-var speedLevel = 0;
-var colors = ['', 'rgba(255, 193, 7, 0.3)', 'rgba(255, 152, 0, 0.3)', 'rgba(244, 67, 54, 0.3)'];
-cheat.add('속도 증가', function() {
-    speedLevel = (speedLevel + 1) % 4;
-    player.speed = [1, 2, 4, 8][speedLevel];
-    if (speedLevel === 0) return false;
-    return { backgroundColor: colors[speedLevel] };
-});
-```
-
-허용되는 스타일 속성: `backgroundColor`, `color`, `borderColor`, `borderWidth`, `borderStyle`, `opacity`, `boxShadow`, `outline`, `textDecoration`, `fontWeight`, `fontStyle`
-
-> 레이아웃에 영향을 주는 속성(padding, margin, width 등)은 무시됩니다.
-
 ## 타입 지원
 
-npm 패키지에 TypeScript 타입 정의(`cheat.d.ts`)가 포함되어 있습니다.
+TypeScript 타입 정의(`cheat.d.ts`)가 포함되어 있습니다.
 
 ## 고급: postMessage API
 
-iframe이나 웹뷰 환경에서 `cheat` 객체에 직접 접근할 수 없을 때 사용합니다.
-대부분의 경우 위의 직접 호출 방식을 권장합니다.
+iframe이나 웹뷰에서 `cheat` 객체에 직접 접근할 수 없을 때 사용합니다.
 
-
-
-```ts
-// cheat(<actions>, <dom>)
-// 내부에서 document.body 사용함.
+```typescript
+// 초기화
 window.postMessage({
     type: 'CHEAT_REQUEST',
     action: 'init',
     payload: {
         actions: [
-            { name: '아이템 전체 추가', key: 'add-all-items' }
+            { name: '아이템 추가', key: 'add-item' }
         ]
     }
 } as CheatRequest, '*');
 
- // 이벤트 수신
-window.addEventListener('message', this.handleCheatEvent.bind(this));
-
-function handleCheatEvent(e: MessageEvent): void {
-    const data = e.data as CheatEvent;
+// 이벤트 수신
+window.addEventListener('message', function(e) {
+    var data = e.data;
     if (data.type !== 'CHEAT_EVENT') return;
     if (data.event !== 'action_triggered') return;
 
-    const key = data.payload.key;
-    switch (key) {
-        case 'add-all-items':
-            // add item data
+    switch (data.payload.key) {
+        case 'add-item':
+            // 처리
             break;
     }
-}
+});
 
+// 그룹 추가/삭제
 window.postMessage({
     type: 'CHEAT_REQUEST',
     action: 'addGroup',
-    payload: {
-        group: 'lobby-actions',
-        actions: [
-            { name: 'Action1', key: 'action-1' }
-        ]
-    }
-} as CheatRequest, '*');
+    payload: { group: 'lobby', actions: [...] }
+}, '*');
 
 window.postMessage({
     type: 'CHEAT_REQUEST',
     action: 'removeGroup',
-    payload: {
-        group: 'lobby-actions'
-    }
-} as CheatRequest, '*');
+    payload: { group: 'lobby' }
+}, '*');
 ```
 
 ## License
