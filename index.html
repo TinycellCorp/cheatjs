@@ -36,12 +36,25 @@
             return ['v2.0.7', 'build ' + _buildTime];
         });
 
-        // 샘플 그룹 1
+        // 샘플 그룹 1 - 토글 테스트 포함
+        var godMode = false;
+        var speedLevel = 0;
         cheat.addGroup(['Player', '플레이어 관련'], {
-            'God Mode': [function() { console.log('God mode ON'); }, '무적 모드'],
+            'God Mode': [function() {
+                godMode = !godMode;
+                console.log('God mode', godMode ? 'ON' : 'OFF');
+                return godMode;  // 토글: true/false 반환
+            }, '무적 토글'],
+            'Speed Up': [function() {
+                speedLevel = (speedLevel + 1) % 4;
+                console.log('Speed level:', speedLevel);
+                if (speedLevel === 0) return false;
+                var colors = ['', 'rgba(255,193,7,0.3)', 'rgba(255,152,0,0.3)', 'rgba(244,67,54,0.3)'];
+                return { backgroundColor: colors[speedLevel] };  // 커스텀 스타일
+            }, '속도 단계'],
             'Add Gold': [function() { console.log('+1000 gold'); }, '골드 추가'],
             'Level Up': function() { console.log('Level up!'); },
-            'Reset Stats': [function() { console.log('Stats reset'); }, '스탯 초기화']
+            'Error Test': [function() { throw new Error('테스트 에러!'); }, '에러 발생']
         });
 
         // 샘플 그룹 2
