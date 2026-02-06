@@ -30,6 +30,9 @@
 
 
 
+
+
+
 /**
  * Cheat Utility - 게임 엔진 독립적인 치트 UI (바텀시트)
  *
@@ -180,7 +183,8 @@
             fontWeight: '500',
             cursor: 'pointer',
             whiteSpace: 'nowrap',
-            transition: 'background-color 0.2s, color 0.2s'
+            transition: 'background-color 0.2s, color 0.2s',
+            flexShrink: '0'
         },
         tabContent: {
             display: 'grid',
@@ -571,6 +575,37 @@
             }
         });
 
+        // 탭바 마우스 드래그 스크롤
+        var tabBarDrag = { active: false, startX: 0, scrollLeft: 0, moved: false };
+        tabBar._drag = tabBarDrag; // 외부 접근용
+        tabBar.style.cursor = 'grab';
+        tabBar.addEventListener('mousedown', function (e) {
+            tabBarDrag.active = true;
+            tabBarDrag.moved = false;
+            tabBarDrag.startX = e.pageX - tabBar.offsetLeft;
+            tabBarDrag.scrollLeft = tabBar.scrollLeft;
+            tabBar.style.cursor = 'grabbing';
+        });
+        tabBar.addEventListener('mouseleave', function () {
+            tabBarDrag.active = false;
+            tabBar.style.cursor = 'grab';
+        });
+        tabBar.addEventListener('mouseup', function () {
+            tabBarDrag.active = false;
+            tabBar.style.cursor = 'grab';
+        });
+        tabBar.addEventListener('mousemove', function (e) {
+            if (!tabBarDrag.active) return;
+            e.preventDefault();
+            var x = e.pageX - tabBar.offsetLeft;
+            var walk = x - tabBarDrag.startX;
+            // 5px 이상 이동하면 드래그로 판정
+            if (Math.abs(walk) > 5) {
+                tabBarDrag.moved = true;
+            }
+            tabBar.scrollLeft = tabBarDrag.scrollLeft - walk;
+        });
+
         bottomSheet.appendChild(tabBarWrapper);
 
         // 컨텐츠 영역
@@ -592,6 +627,11 @@
             // 스크롤 가능한 컨텐츠 영역인지 확인
             while (target && target !== bottomSheet) {
                 if (target === content && content.scrollHeight > content.clientHeight) {
+                    isScrollable = true;
+                    break;
+                }
+                // 탭바 가로 스크롤 허용
+                if (target === tabBar && tabBar.scrollWidth > tabBar.clientWidth) {
                     isScrollable = true;
                     break;
                 }
@@ -800,6 +840,8 @@
         applyStyles(tab, STYLES.tab);
         tab.textContent = groupKey;
         tab.onclick = function () {
+            // 드래그 중이었으면 클릭 무시
+            if (ui && ui.tabBar && ui.tabBar._drag && ui.tabBar._drag.moved) return;
             selectTab(groupKey);
         };
 
