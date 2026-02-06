@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>cheat.js dev preview</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 40px;
+            background: #1a1a2e;
+            color: #eee;
+            font-family: sans-serif;
+        }
+        h1 { color: #e94560; }
+        p { color: #aaa; line-height: 1.6; }
+        code { background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <h1>cheat.js dev preview</h1>
+    <p>Shift+Click (desktop) or Triple-tap (mobile) to open the cheat UI.</p>
+    <p>Or click the button below:</p>
+    <button onclick="window.cheat.show()" style="padding:10px 20px;font-size:16px;cursor:pointer;">
+        Show Cheat UI
+    </button>
+
+    <script src="./cheat.js"></script>
+    <script>
+        // 초기화
+        cheat({ 'Hello': function() { alert('Hello!'); } });
+
+        // 상태라인 (빌드 시각으로 변경 확인용)
+        var _buildTime = new Date().toLocaleTimeString('ko-KR', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+        cheat.statusline(function(opt) {
+            return ['v2.0.7', 'build ' + _buildTime];
+        });
+
+        // 샘플 그룹 1
+        cheat.addGroup(['Player', '플레이어 관련'], {
+            'God Mode': [function() { console.log('God mode ON'); }, '무적 모드'],
+            'Add Gold': [function() { console.log('+1000 gold'); }, '골드 추가'],
+            'Level Up': function() { console.log('Level up!'); },
+            'Reset Stats': [function() { console.log('Stats reset'); }, '스탯 초기화']
+        });
+
+        // 샘플 그룹 2
+        cheat.addGroup(['World', '월드 설정'], {
+            'Skip Stage': function() { console.log('Stage skipped'); },
+            'Spawn Enemy': [function() { console.log('Enemy spawned'); }, '적 생성'],
+            'Clear Map': function() { console.log('Map cleared'); }
+        });
+
+        // 샘플 그룹 3
+        cheat.addGroup(['Debug', '디버그 도구'], {
+            'Show FPS': function() { console.log('FPS overlay'); },
+            'Dump State': [function() { console.log(JSON.stringify({hp:100,mp:50})); }, '상태 덤프'],
+            'Toggle Hitbox': function() { console.log('Hitbox toggled'); },
+            'Network Log': [function() { console.log('Network logging started'); }, '네트워크 로그'],
+            'Memory Info': function() { console.log('Memory:', performance.memory); }
+        });
+
+        // 디버그 모드 ON
+        cheat.debug = true;
+    </script>
+</body>
+</html>
