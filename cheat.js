@@ -1,4 +1,5 @@
-/** @version 2.0.10 */
+/** @version 2.0.12 */
+
 
 
 
@@ -400,12 +401,13 @@
     }
 
     // 버튼에 기본 스타일 + 지속 스타일 적용
-    function applyPersistentStyles(btn, persistentStyles) {
+    function applyPersistentStyles(btn, persistentStyles, baseStyle) {
+        baseStyle = baseStyle || STYLES.actionBtn;
         for (var i = 0; i < ALLOWED_PERSISTENT_STYLES.length; i++) {
             btn.style[ALLOWED_PERSISTENT_STYLES[i]] = '';
         }
-        btn.style.backgroundColor = STYLES.actionBtn.backgroundColor;
-        btn.style.color = STYLES.actionBtn.color;
+        btn.style.backgroundColor = baseStyle.backgroundColor;
+        btn.style.color = baseStyle.color;
         btn.style.border = 'none';
         if (persistentStyles) {
             for (var key in persistentStyles) {
@@ -1140,8 +1142,9 @@
         btn.appendChild(nameSpan);
 
         // 현재 값 표시
-        var initialValue = config.options[0];
-        if (config.default !== undefined && config.options.indexOf(config.default) > -1) {
+        var resolvedInit = resolveSelectOptions(config.options);
+        var initialValue = resolvedInit[0];
+        if (config.default !== undefined && resolvedInit.indexOf(config.default) > -1) {
             initialValue = config.default;
         }
 
@@ -1164,11 +1167,12 @@
             applyStyles(popup, STYLES.selectPopup);
             popup._actionName = name;
 
-            // 옵션 생성
+            // 옵션 해석 (함수면 매번 호출)
             var currentAction = actions[name];
-            var currentValue = currentAction ? currentAction.selectValue : config.options[0];
+            var currentOptions = resolveSelectOptions(config.options);
+            var currentValue = currentAction ? currentAction.selectValue : currentOptions[0];
 
-            for (var i = 0; i < config.options.length; i++) {
+            for (var i = 0; i < currentOptions.length; i++) {
                 (function (optValue, optIndex) {
                     var optBtn = document.createElement('button');
                     applyStyles(optBtn, STYLES.selectOption);
@@ -1186,15 +1190,34 @@
                         valueSpan.textContent = optValue + ' \u25BE';
                         // 팝업 닫기
                         closeActiveSelectPopup();
-                        // onChange 호출
+                        // onChange 호출 + 반환값 처리
                         if (config.onChange) {
                             try {
-                                config.onChange(optValue, optIndex);
+                                var result = config.onChange(optValue, optIndex);
+                                var resolved = resolveReturnValue(result);
+                                if (resolved !== undefined) {
+                                    if (resolved._autoClose) {
+                                        // 초록 피드백 후 자동 닫기
+                                        btn.style.backgroundColor = 'rgba(76, 175, 80, 0.4)';
+                                        setTimeout(function () {
+                                            applyPersistentStyles(btn, null, STYLES.selectBtn);
+                                        }, 200);
+                                        setTimeout(function () {
+                                            hide();
+                                        }, 300);
+                                    } else {
+                                        // 토글/커스텀 스타일
+                                        if (currentAction) {
+                                            currentAction.persistentStyles = resolved;
+                                        }
+                                        applyPersistentStyles(btn, resolved, STYLES.selectBtn);
+                                    }
+                                }
                             } catch (err) {
                                 console.error('[Cheat] onChange 오류:', err);
                                 btn.style.backgroundColor = 'rgba(244, 67, 54, 0.4)';
                                 setTimeout(function () {
-                                    btn.style.backgroundColor = STYLES.selectBtn.backgroundColor;
+                                    applyPersistentStyles(btn, currentAction ? currentAction.persistentStyles : null, STYLES.selectBtn);
                                 }, 200);
                             }
                         }
@@ -1211,7 +1234,7 @@
                             : 'transparent';
                     };
                     popup.appendChild(optBtn);
-                })(config.options[i], i);
+                })(currentOptions[i], i);
             }
 
             // 팝업 위치 계산
@@ -1257,6 +1280,11 @@
             btn.style.backgroundColor = 'rgba(255, 255, 255, 0.10)';
         };
         btn.onmouseleave = function () {
+            var act = actions[name];
+            if (act && act.persistentStyles && act.persistentStyles.backgroundColor) {
+                btn.style.backgroundColor = act.persistentStyles.backgroundColor;
+                return;
+            }
             btn.style.backgroundColor = STYLES.selectBtn.backgroundColor;
         };
 
@@ -1460,9 +1488,16 @@
         }, { capture: true, passive: true });
     }
 
+    // options 해석 (배열 또는 함수)
+    function resolveSelectOptions(options) {
+        return typeof options === 'function' ? options() : options;
+    }
+
     // select 타입 명령어 추가
     function addSelect(name, config, groupKey) {
-        if (!config.options || !Array.isArray(config.options) || config.options.length === 0) {
+        var isFunc = typeof config.options === 'function';
+        var resolved = isFunc ? config.options() : config.options;
+        if (!resolved || !Array.isArray(resolved) || resolved.length === 0) {
             console.error('[Cheat] select 옵션이 필요합니다:', name);
             return;
         }
@@ -1470,12 +1505,12 @@
         var group = groupKey || GLOBAL_GROUP;
 
         // 기본값 결정 (silent fallback)
-        var initialValue = config.options[0];
+        var initialValue = resolved[0];
         if (config.default !== undefined) {
-            if (config.options.indexOf(config.default) > -1) {
+            if (resolved.indexOf(config.default) > -1) {
                 initialValue = config.default;
             } else {
-                log('[Cheat] 기본값이 옵션에 없음, 첫 번째 옵션 사용: ' + config.options[0]);
+                log('[Cheat] 기본값이 옵션에 없음, 첫 번째 옵션 사용: ' + resolved[0]);
             }
         }
 
@@ -1496,7 +1531,7 @@
             persistentStyles: null,
             isSelect: true,
             selectValue: initialValue,
-            selectOptions: config.options.slice(),
+            selectOptions: isFunc ? config.options : config.options.slice(),
             selectOnChange: config.onChange || null,
             selectPopup: null
         };
