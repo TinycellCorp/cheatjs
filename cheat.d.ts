@@ -28,9 +28,9 @@ declare global {
     /** 셀렉트 액션 설정 */
     interface CheatSelectConfig {
         type: 'select';
-        options: string[];
+        options: string[] | (() => string[]);
         default?: string;
-        onChange?: (value: string, index: number) => void;
+        onChange?: (value: string, index: number) => void | CheatButtonState;
         desc?: string;
     }
 
@@ -56,8 +56,8 @@ declare global {
         // select 전용 필드
         isSelect?: boolean;
         selectValue?: string;
-        selectOptions?: string[];
-        selectOnChange?: ((value: string, index: number) => void) | null;
+        selectOptions?: string[] | (() => string[]);
+        selectOnChange?: ((value: string, index: number) => void | CheatButtonState) | null;
         selectPopup?: HTMLDivElement | null;
     }
 
@@ -122,7 +122,7 @@ declare global {
         key: string;
         desc?: string;
         type?: 'select';
-        options?: string[];
+        options?: string[] | (() => string[]);
         default?: string;
     }
 

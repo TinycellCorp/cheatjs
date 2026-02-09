@@ -108,6 +108,56 @@
             'Reset All': function() { console.log('All settings reset'); }
         });
 
+        // 샘플 그룹 5 - select 반환값 + 동적 옵션 테스트
+        var serverList = ['서버1', '서버2', '서버3'];
+        cheat.addGroup(['Select Test', 'select 신기능'], {
+            'autoClose': {
+                type: 'select',
+                options: ['옵션A', '옵션B', '옵션C'],
+                onChange: function(value) {
+                    console.log('autoClose 테스트:', value);
+                    return 'close';
+                },
+                desc: "return 'close' → 바텀시트 닫힘"
+            },
+            'toggle': {
+                type: 'select',
+                options: ['OFF', 'ON'],
+                default: 'OFF',
+                onChange: function(value) {
+                    console.log('토글:', value);
+                    return value === 'ON';
+                },
+                desc: 'return true/false → 토글 스타일'
+            },
+            'customStyle': {
+                type: 'select',
+                options: ['기본', '경고', '위험'],
+                onChange: function(value) {
+                    console.log('스타일:', value);
+                    if (value === '경고') return { backgroundColor: 'rgba(255,193,7,0.3)' };
+                    if (value === '위험') return { backgroundColor: 'rgba(244,67,54,0.3)' };
+                    return false;
+                },
+                desc: '커스텀 스타일 반환'
+            },
+            'dynamicOpts': {
+                type: 'select',
+                options: function() {
+                    var now = new Date().toLocaleTimeString('ko-KR', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+                    return serverList.concat(['추가-' + now]);
+                },
+                onChange: function(value) {
+                    console.log('동적 옵션 선택:', value);
+                },
+                desc: '열 때마다 옵션 갱신'
+            },
+            'addServer': [function() {
+                serverList.push('서버' + (serverList.length + 1));
+                console.log('서버 추가됨:', serverList);
+            }, '서버 목록에 추가 (동적 테스트용)']
+        });
+
         // 디버그 모드 ON
         cheat.debug = true;
     </script>

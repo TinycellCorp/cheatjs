@@ -178,10 +178,58 @@ cheat.addGroup('Settings', {
 | 속성 | 타입 | 필수 | 설명 |
 |------|------|------|------|
 | `type` | `'select'` | O | 셀렉트 버튼 식별자 |
-| `options` | `string[]` | O | 선택지 목록 |
+| `options` | `string[]` \| `() => string[]` | O | 선택지 목록 (배열 또는 함수) |
 | `default` | `string` | | 초기 선택값 (미지정 시 첫 번째) |
-| `onChange` | `(value, index) => void` | | 값 변경 콜백 |
+| `onChange` | `(value, index) => void \| CheatButtonState` | | 값 변경 콜백 (반환값으로 상태 제어) |
 | `desc` | `string` | | 버튼 설명 텍스트 |
+
+### onChange 반환값
+
+일반 버튼과 동일한 반환값을 지원합니다.
+
+```javascript
+// 선택 후 바텀시트 자동 닫기
+cheat.add('서버', {
+    type: 'select',
+    options: ['서버1', '서버2'],
+    onChange: function(value) {
+        connectServer(value);
+        return 'close';
+    }
+});
+
+// 토글 스타일
+cheat.add('모드', {
+    type: 'select',
+    options: ['OFF', 'ON'],
+    onChange: function(value) {
+        return value === 'ON';  // true: 파란 배경, false: 기본
+    }
+});
+
+// 커스텀 스타일
+cheat.add('위험도', {
+    type: 'select',
+    options: ['안전', '경고', '위험'],
+    onChange: function(value) {
+        if (value === '경고') return { backgroundColor: 'rgba(255,193,7,0.3)' };
+        if (value === '위험') return { backgroundColor: 'rgba(244,67,54,0.3)' };
+        return false;
+    }
+});
+```
+
+### 동적 옵션
+
+`options`에 함수를 전달하면 팝업을 열 때마다 호출하여 옵션을 동적으로 생성합니다.
+
+```javascript
+cheat.add('서버 선택', {
+    type: 'select',
+    options: function() { return getAvailableServers(); },
+    onChange: function(value) { connect(value); }
+});
+```
 
 ## 탭/드롭다운 모드
 
