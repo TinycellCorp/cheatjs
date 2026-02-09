@@ -1,4 +1,6 @@
-/** @version 2.0.9 */
+/** @version 2.0.10 */
+
+
 
 
 
@@ -84,6 +86,7 @@
     var debugMode = false; // 디버그 로그 출력 여부
     var tabMode = 'tab'; // 'tab' | 'dropdown'
     var dropdownOpen = false; // 드롭다운 메뉴 열림 상태
+    var activeSelectPopup = null; // 현재 열린 select 팝업
 
     // 디버그 로그 헬퍼
     function log() {
@@ -288,6 +291,72 @@
             backgroundColor: 'rgba(255, 255, 255, 0.1)',
             color: '#fff',
             fontWeight: '500'
+        },
+        // select 버튼 스타일
+        selectBtn: {
+            padding: '12px',
+            backgroundColor: 'rgba(255, 255, 255, 0.06)',
+            border: 'none',
+            borderRadius: '8px',
+            color: '#fff',
+            fontSize: '13px',
+            cursor: 'pointer',
+            textAlign: 'center',
+            boxSizing: 'border-box',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '4px',
+            height: '56px',
+            touchAction: 'manipulation',
+            userSelect: 'none',
+            overflow: 'hidden'
+        },
+        selectBtnName: {
+            fontSize: '13px',
+            fontWeight: '500',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+            maxWidth: '100%'
+        },
+        selectBtnValue: {
+            fontSize: '11px',
+            color: 'rgba(255, 255, 255, 0.6)',
+            lineHeight: '1.2',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+            maxWidth: '100%'
+        },
+        selectPopup: {
+            position: 'fixed',
+            backgroundColor: 'rgba(40, 40, 40, 0.98)',
+            borderRadius: '8px',
+            boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
+            zIndex: '20',
+            maxHeight: '200px',
+            overflowY: 'auto',
+            overscrollBehavior: 'contain'
+        },
+        selectOption: {
+            display: 'block',
+            width: '100%',
+            padding: '14px 16px',
+            backgroundColor: 'transparent',
+            border: 'none',
+            color: 'rgba(255, 255, 255, 0.7)',
+            fontSize: '13px',
+            cursor: 'pointer',
+            textAlign: 'left',
+            boxSizing: 'border-box',
+            touchAction: 'manipulation'
+        },
+        selectOptionActive: {
+            backgroundColor: 'rgba(255, 255, 255, 0.1)',
+            color: '#fff',
+            fontWeight: '500'
         }
     };
 
@@ -312,6 +381,7 @@
     // 콜백 반환값을 지속 스타일 객체로 변환
     function resolveReturnValue(result) {
         if (result === undefined || result === null) return undefined;
+        if (result === 'close') return { _autoClose: true };  // 자동 닫기 마커
         if (result === true) return TOGGLE_ON_STYLES;
         if (result === false) return null;
         if (typeof result === 'object') {
@@ -344,6 +414,24 @@
                 }
             }
         }
+    }
+
+    // 열린 select 팝업 닫기
+    function closeActiveSelectPopup() {
+        if (!activeSelectPopup) return;
+        // popup DOM 제거
+        if (activeSelectPopup.parentNode) {
+            activeSelectPopup.parentNode.removeChild(activeSelectPopup);
+        }
+        // scroll 리스너 정리
+        if (activeSelectPopup._scrollHandler && ui && ui.content) {
+            ui.content.removeEventListener('scroll', activeSelectPopup._scrollHandler);
+        }
+        // actions에서 popup 참조 정리
+        if (activeSelectPopup._actionName && actions[activeSelectPopup._actionName]) {
+            actions[activeSelectPopup._actionName].selectPopup = null;
+        }
+        activeSelectPopup = null;
     }
 
     // 버튼 요소로 actionData 찾기
@@ -573,6 +661,28 @@
             }
             if (!isInDropdown) {
                 closeDropdownMenu();
+            }
+        });
+
+        // select 팝업 외부 클릭 시 닫기
+        bottomSheet.addEventListener('click', function (e) {
+            if (!activeSelectPopup) return;
+            var target = e.target;
+            var isInPopup = false;
+            while (target && target !== bottomSheet) {
+                if (target === activeSelectPopup) {
+                    isInPopup = true;
+                    break;
+                }
+                // select 버튼 자체 클릭은 btn.onclick에서 처리
+                if (target.tagName === 'BUTTON' && actions[activeSelectPopup._actionName] &&
+                    target === actions[activeSelectPopup._actionName].btn) {
+                    return;
+                }
+                target = target.parentNode;
+            }
+            if (!isInPopup) {
+                closeActiveSelectPopup();
             }
         });
 
@@ -949,14 +1059,26 @@
                 var result = callback();
                 var resolved = resolveReturnValue(result);
 
-                // 지속 상태 업데이트
                 if (resolved !== undefined) {
-                    var actionData = findActionByBtn(btn);
-                    if (actionData) {
-                        actionData.persistentStyles = resolved;
+                    // autoClose 마커 체크
+                    if (resolved._autoClose) {
+                        // 초록 피드백 후 자동 닫기
+                        btn.style.backgroundColor = 'rgba(76, 175, 80, 0.4)';
+                        feedbackTimer = setTimeout(function () {
+                            feedbackTimer = null;
+                            applyPersistentStyles(btn, null);
+                        }, 200);
+                        setTimeout(function () {
+                            hide();
+                        }, 300);
+                    } else {
+                        // 기존 토글/커스텀 스타일 로직
+                        var actionData = findActionByBtn(btn);
+                        if (actionData) {
+                            actionData.persistentStyles = resolved;
+                        }
+                        applyPersistentStyles(btn, resolved);
                     }
-                    // 토글/커스텀 스타일: 바로 적용 (성공 피드백 생략)
-                    applyPersistentStyles(btn, resolved);
                 } else {
                     // 일반 버튼: 성공 피드백 (초록) 후 복귀
                     btn.style.backgroundColor = 'rgba(76, 175, 80, 0.4)';
@@ -966,6 +1088,7 @@
                     }, 200);
                 }
             } catch (e) {
+                // 에러 시 autoClose 하지 않음 (에러 피드백을 봐야 함)
                 console.error('[Cheat] 액션 오류:', e);
                 btn.style.backgroundColor = 'rgba(244, 67, 54, 0.4)';
                 feedbackTimer = setTimeout(function () {
@@ -1002,6 +1125,145 @@
         }
     }
 
+    // select 버튼 추가
+    function addSelectButton(name, config, groupKey) {
+        var group = getOrCreateGroupContainer(groupKey);
+        if (!group || !group.content) return null;
+
+        var btn = document.createElement('button');
+        applyStyles(btn, STYLES.selectBtn);
+
+        // 이름
+        var nameSpan = document.createElement('span');
+        applyStyles(nameSpan, STYLES.selectBtnName);
+        nameSpan.textContent = name;
+        btn.appendChild(nameSpan);
+
+        // 현재 값 표시
+        var initialValue = config.options[0];
+        if (config.default !== undefined && config.options.indexOf(config.default) > -1) {
+            initialValue = config.default;
+        }
+
+        var valueSpan = document.createElement('span');
+        applyStyles(valueSpan, STYLES.selectBtnValue);
+        valueSpan.textContent = initialValue + ' \u25BE';
+        btn.appendChild(valueSpan);
+
+        btn.onclick = function () {
+            // 이미 이 버튼의 팝업이 열려있으면 닫기
+            if (activeSelectPopup && activeSelectPopup._actionName === name) {
+                closeActiveSelectPopup();
+                return;
+            }
+            // 다른 팝업 열려있으면 먼저 닫기
+            closeActiveSelectPopup();
+
+            // 팝업 생성
+            var popup = document.createElement('div');
+            applyStyles(popup, STYLES.selectPopup);
+            popup._actionName = name;
+
+            // 옵션 생성
+            var currentAction = actions[name];
+            var currentValue = currentAction ? currentAction.selectValue : config.options[0];
+
+            for (var i = 0; i < config.options.length; i++) {
+                (function (optValue, optIndex) {
+                    var optBtn = document.createElement('button');
+                    applyStyles(optBtn, STYLES.selectOption);
+                    if (optValue === currentValue) {
+                        applyStyles(optBtn, STYLES.selectOptionActive);
+                    }
+                    optBtn.textContent = optValue;
+                    optBtn.onclick = function (e) {
+                        e.stopPropagation();
+                        // 값 업데이트
+                        if (currentAction) {
+                            currentAction.selectValue = optValue;
+                        }
+                        // 버튼 텍스트 업데이트
+                        valueSpan.textContent = optValue + ' \u25BE';
+                        // 팝업 닫기
+                        closeActiveSelectPopup();
+                        // onChange 호출
+                        if (config.onChange) {
+                            try {
+                                config.onChange(optValue, optIndex);
+                            } catch (err) {
+                                console.error('[Cheat] onChange 오류:', err);
+                                btn.style.backgroundColor = 'rgba(244, 67, 54, 0.4)';
+                                setTimeout(function () {
+                                    btn.style.backgroundColor = STYLES.selectBtn.backgroundColor;
+                                }, 200);
+                            }
+                        }
+                    };
+                    // 호버 효과
+                    optBtn.onmouseenter = function () {
+                        if (optValue !== currentValue) {
+                            optBtn.style.backgroundColor = 'rgba(255, 255, 255, 0.06)';
+                        }
+                    };
+                    optBtn.onmouseleave = function () {
+                        optBtn.style.backgroundColor = optValue === (currentAction ? currentAction.selectValue : currentValue)
+                            ? STYLES.selectOptionActive.backgroundColor
+                            : 'transparent';
+                    };
+                    popup.appendChild(optBtn);
+                })(config.options[i], i);
+            }
+
+            // 팝업 위치 계산
+            var btnRect = btn.getBoundingClientRect();
+            var sheetRect = ui.bottomSheet.getBoundingClientRect();
+
+            // ui.bottomSheet에 추가 (overflow:auto 클리핑 회피)
+            ui.bottomSheet.appendChild(popup);
+
+            // 팝업 높이 측정 후 방향 결정
+            var popupHeight = popup.offsetHeight;
+            var spaceBelow = sheetRect.bottom - btnRect.bottom - 8;
+
+            if (popupHeight <= spaceBelow) {
+                // 아래로 열기 (기본)
+                popup.style.top = (btnRect.bottom - sheetRect.top) + 'px';
+            } else {
+                // 위로 열기 (공간 부족 시)
+                popup.style.top = (btnRect.top - sheetRect.top - popupHeight) + 'px';
+            }
+            popup.style.left = (btnRect.left - sheetRect.left) + 'px';
+            popup.style.width = btnRect.width + 'px';
+
+            // scroll 리스너 등록
+            var scrollHandler = function () {
+                closeActiveSelectPopup();
+            };
+            popup._scrollHandler = scrollHandler;
+            if (ui && ui.content) {
+                ui.content.addEventListener('scroll', scrollHandler);
+            }
+
+            // actions에 popup 참조 저장
+            if (currentAction) {
+                currentAction.selectPopup = popup;
+            }
+
+            activeSelectPopup = popup;
+        };
+
+        // 호버 효과
+        btn.onmouseenter = function () {
+            btn.style.backgroundColor = 'rgba(255, 255, 255, 0.10)';
+        };
+        btn.onmouseleave = function () {
+            btn.style.backgroundColor = STYLES.selectBtn.backgroundColor;
+        };
+
+        group.content.appendChild(btn);
+        return btn;
+    }
+
     // UI 표시
     function show() {
         if (!ui) createUI();
@@ -1012,8 +1274,18 @@
         for (var name in actions) {
             if (actions.hasOwnProperty(name) && !actions[name].btn) {
                 var a = actions[name];
-                var btn = addActionButton(name, a.callback, a.desc, a.group);
-                a.btn = btn;
+                if (a.isSelect) {
+                    // select 타입: 저장된 데이터에서 config 복원
+                    var selectConfig = {
+                        options: a.selectOptions,
+                        onChange: a.selectOnChange,
+                        default: a.selectValue,
+                        desc: a.desc
+                    };
+                    a.btn = addSelectButton(name, selectConfig, a.group);
+                } else {
+                    a.btn = addActionButton(name, a.callback, a.desc, a.group);
+                }
             }
         }
 
@@ -1059,6 +1331,9 @@
     // UI 숨김
     function hide() {
         if (!isVisible || isAnimating) return;
+
+        // 열린 select 팝업 닫기
+        closeActiveSelectPopup();
 
         // 탭 카운트 리셋 (닫을 때 터치가 카운트되는 것 방지)
         if (resetTapCount) resetTapCount();
@@ -1185,6 +1460,55 @@
         }, { capture: true, passive: true });
     }
 
+    // select 타입 명령어 추가
+    function addSelect(name, config, groupKey) {
+        if (!config.options || !Array.isArray(config.options) || config.options.length === 0) {
+            console.error('[Cheat] select 옵션이 필요합니다:', name);
+            return;
+        }
+
+        var group = groupKey || GLOBAL_GROUP;
+
+        // 기본값 결정 (silent fallback)
+        var initialValue = config.options[0];
+        if (config.default !== undefined) {
+            if (config.options.indexOf(config.default) > -1) {
+                initialValue = config.default;
+            } else {
+                log('[Cheat] 기본값이 옵션에 없음, 첫 번째 옵션 사용: ' + config.options[0]);
+            }
+        }
+
+        // 기존 같은 이름 제거
+        if (actions[name]) {
+            remove(name);
+        }
+
+        // 버튼 생성
+        var btn = addSelectButton(name, config, group);
+
+        // actions에 저장
+        actions[name] = {
+            callback: null,
+            desc: config.desc || null,
+            btn: btn,
+            group: group,
+            persistentStyles: null,
+            isSelect: true,
+            selectValue: initialValue,
+            selectOptions: config.options.slice(),
+            selectOnChange: config.onChange || null,
+            selectPopup: null
+        };
+
+        // groups commands에 추가
+        if (groups[group]) {
+            groups[group].commands.push(name);
+        }
+
+        log('[Cheat] 추가됨: "' + name + '" (select)');
+    }
+
     // 단일 명령어 추가 (오버로딩: action은 함수 또는 [함수, 설명])
     function add(name, action, groupKey) {
         if (!name || !action) return;
@@ -1196,6 +1520,8 @@
         } else if (Array.isArray(action)) {
             callback = action[0];
             desc = action[1] || null;
+        } else if (typeof action === 'object' && action !== null && action.type === 'select') {
+            return addSelect(name, action, groupKey);
         } else {
             console.error('[Cheat] 잘못된 액션:', name);
             return;
@@ -1236,6 +1562,18 @@
         }
 
         var actionData = actions[name];
+
+        // select 팝업 정리
+        if (actionData.isSelect && actionData.selectPopup) {
+            if (activeSelectPopup === actionData.selectPopup) {
+                closeActiveSelectPopup();
+            } else {
+                if (actionData.selectPopup.parentNode) {
+                    actionData.selectPopup.parentNode.removeChild(actionData.selectPopup);
+                }
+                actionData.selectPopup = null;
+            }
+        }
 
         // 버튼 제거
         removeActionButton(actionData.btn);
@@ -1356,9 +1694,18 @@
 
     // 전체 삭제
     function clear() {
+        // 열린 select 팝업 닫기
+        closeActiveSelectPopup();
+
         // 모든 명령어의 버튼 제거
         for (var name in actions) {
             if (actions.hasOwnProperty(name)) {
+                // select 팝업 DOM 정리
+                if (actions[name].isSelect && actions[name].selectPopup) {
+                    if (actions[name].selectPopup.parentNode) {
+                        actions[name].selectPopup.parentNode.removeChild(actions[name].selectPopup);
+                    }
+                }
                 removeActionButton(actions[name].btn);
             }
         }
@@ -1508,20 +1855,43 @@
         var name = payload.name;
         var targetGroup = groupKey || GLOBAL_GROUP;
 
-        // 버튼 클릭 시 이벤트 발행하는 콜백 생성
-        var callback = function() {
-            window.postMessage({
-                type: 'CHEAT_EVENT',
-                event: 'action_triggered',
-                payload: {
-                    key: key,
-                    name: name,
-                    group: targetGroup
+        if (payload.type === 'select') {
+            // select 타입: onChange가 이벤트 발행하는 콜백
+            var selectConfig = {
+                type: 'select',
+                options: payload.options || [],
+                default: payload.default,
+                desc: payload.desc,
+                onChange: function(value, index) {
+                    window.postMessage({
+                        type: 'CHEAT_EVENT',
+                        event: 'select_changed',
+                        payload: {
+                            key: key,
+                            name: name,
+                            group: targetGroup,
+                            value: value,
+                            index: index
+                        }
+                    }, window.location.origin);
                 }
-            }, window.location.origin);
-        };
-
-        add(name, payload.desc ? [callback, payload.desc] : callback, targetGroup);
+            };
+            add(name, selectConfig, targetGroup);
+        } else {
+            // 기존 일반 버튼 로직
+            var callback = function() {
+                window.postMessage({
+                    type: 'CHEAT_EVENT',
+                    event: 'action_triggered',
+                    payload: {
+                        key: key,
+                        name: name,
+                        group: targetGroup
+                    }
+                }, window.location.origin);
+            };
+            add(name, payload.desc ? [callback, payload.desc] : callback, targetGroup);
+        }
     }
 
     // postMessage를 통한 그룹 추가
