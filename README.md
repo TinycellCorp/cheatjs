@@ -112,8 +112,9 @@ cheat({ ... }, document.getElementById('game'));
 | 반환값 | 동작 |
 |--------|------|
 | `undefined` | 기본 (성공 피드백 후 복귀) |
-| `true` | 토글 ON (초록 배경 유지) |
+| `true` | 토글 ON (파란 배경 유지) |
 | `false` | 토글 OFF (기본 상태) |
+| `'close'` | 성공 피드백 + 바텀시트 자동 닫기 |
 | `{ backgroundColor: '...' }` | 커스텀 스타일 유지 |
 
 ```javascript
@@ -122,6 +123,18 @@ var godMode = false;
 cheat.add('무적', function() {
     godMode = !godMode;
     return godMode;  // true/false로 ON/OFF 표시
+});
+
+// 자동 닫기 (일회성 액션)
+cheat.add('골드 추가', function() {
+    addGold(1000);
+    return 'close';  // 실행 후 바텀시트 닫힘
+});
+
+// 조건부 닫기
+cheat.add('아이템 획득', function() {
+    var ok = giveItem();
+    return ok ? 'close' : undefined;  // 성공 시만 닫기
 });
 
 // 커스텀 색상 (단계별)

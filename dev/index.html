@@ -57,11 +57,16 @@
             'Error Test': [function() { throw new Error('테스트 에러!'); }, '에러 발생']
         });
 
-        // 샘플 그룹 2
+        // 샘플 그룹 2 - autoClose 테스트 포함
         cheat.addGroup(['World', '월드 설정'], {
-            'Skip Stage': function() { console.log('Stage skipped'); },
+            'Skip Stage': [function() { console.log('Stage skipped'); return 'close'; }, '자동 닫기'],
             'Spawn Enemy': [function() { console.log('Enemy spawned'); }, '적 생성'],
-            'Clear Map': function() { console.log('Map cleared'); }
+            'Clear Map': function() { console.log('Map cleared'); },
+            'Conditional Close': [function() {
+                var ok = Math.random() > 0.5;
+                console.log('Result:', ok ? 'close' : 'stay');
+                return ok ? 'close' : undefined;
+            }, '50% 확률 닫기']
         });
 
         // 샘플 그룹 3
@@ -71,6 +76,36 @@
             'Toggle Hitbox': function() { console.log('Hitbox toggled'); },
             'Network Log': [function() { console.log('Network logging started'); }, '네트워크 로그'],
             'Memory Info': function() { console.log('Memory:', performance.memory); }
+        });
+
+        // 샘플 그룹 4 - select 버튼 테스트
+        cheat.addGroup(['Settings', '설정'], {
+            'Language': {
+                type: 'select',
+                options: ['Korean', 'English', 'Japanese', 'Chinese'],
+                default: 'Korean',
+                onChange: function(value, index) {
+                    console.log('Language changed to:', value, '(index:', index, ')');
+                },
+                desc: '언어 변경'
+            },
+            'Difficulty': {
+                type: 'select',
+                options: ['Easy', 'Normal', 'Hard', 'Nightmare'],
+                default: 'Normal',
+                onChange: function(value, index) {
+                    console.log('Difficulty:', value);
+                },
+                desc: '난이도 설정'
+            },
+            'Theme': {
+                type: 'select',
+                options: ['Dark', 'Light'],
+                onChange: function(value) {
+                    console.log('Theme:', value);
+                }
+            },
+            'Reset All': function() { console.log('All settings reset'); }
         });
 
         // 디버그 모드 ON
