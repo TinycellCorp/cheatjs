@@ -148,6 +148,41 @@ cheat.add('속도', function() {
 
 허용 스타일: `backgroundColor`, `color`, `borderColor`, `borderWidth`, `borderStyle`, `opacity`, `boxShadow`, `outline`, `textDecoration`, `fontWeight`, `fontStyle`
 
+## 셀렉트 버튼
+
+드롭다운 선택형 버튼을 만들 수 있습니다.
+
+```javascript
+cheat.add('언어', {
+    type: 'select',
+    options: ['Korean', 'English', 'Japanese'],
+    default: 'Korean',
+    onChange: function(value, index) {
+        console.log('선택:', value, index);
+    },
+    desc: '언어 변경'
+});
+
+// 그룹에서 일반 버튼과 혼합 사용
+cheat.addGroup('Settings', {
+    'Difficulty': {
+        type: 'select',
+        options: ['Easy', 'Normal', 'Hard'],
+        default: 'Normal',
+        onChange: function(value) { setDifficulty(value); }
+    },
+    'Reset All': function() { resetSettings(); }
+});
+```
+
+| 속성 | 타입 | 필수 | 설명 |
+|------|------|------|------|
+| `type` | `'select'` | O | 셀렉트 버튼 식별자 |
+| `options` | `string[]` | O | 선택지 목록 |
+| `default` | `string` | | 초기 선택값 (미지정 시 첫 번째) |
+| `onChange` | `(value, index) => void` | | 값 변경 콜백 |
+| `desc` | `string` | | 버튼 설명 텍스트 |
+
 ## 탭/드롭다운 모드
 
 탭바 우측 토글 버튼으로 모드 전환 가능합니다.
