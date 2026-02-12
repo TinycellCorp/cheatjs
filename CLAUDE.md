@@ -19,7 +19,8 @@ npm run dev      # Vite dev preview (dev/)
 1. **`npm run build` 통과** - 4단계 모두 성공해야 함
 2. **`cheat.d.ts` 동기화** - 구조체/인터페이스 변경 시 타입 선언 업데이트
 3. **`README.md` 업데이트** - 새 기능/API 변경 시 문서 반영
-4. **커밋 완료** - 위 파일들이 모두 커밋된 상태에서 배포
+4. **스킬 API 레퍼런스 동기화** - API 변경 시 `~/.claude/skills/cheatjs/docs/api-reference.md` 업데이트 (수동 편집)
+5. **커밋 완료** - 위 파일들이 모두 커밋된 상태에서 배포
 
 ```bash
 npm run release:patch   # patch 배포
