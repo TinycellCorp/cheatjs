@@ -5,7 +5,5 @@
   "author": {
     "name": "TinycellCorp"
   },
-  "homepage": "https://github.com/TinycellCorp/cheatjs",
-  "repository": "https://github.com/TinycellCorp/cheatjs",
-  "license": "MIT"
+  "keywords": ["cheatjs", "cheat-ui", "debug", "game"]
 }
