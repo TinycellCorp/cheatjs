@@ -1,0 +1,10 @@
+{
+  "extraKnownMarketplaces": {
+    "tinycell-cheatjs": {
+      "source": {
+        "source": "github",
+        "repo": "TinycellCorp/cheatjs"
+      }
+    }
+  }
+}
