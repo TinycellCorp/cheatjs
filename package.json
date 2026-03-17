@@ -20,7 +20,7 @@
     "validate-types": "node scripts/validate-types.js",
     "build": "npm run inject-version && npm run minify && npm run validate-types && npm run type-check",
     "prepublishOnly": "npm run build",
-    "version": "npm run build && git add cheat.js cheat.min.js .claude-plugin/marketplace.json plugin/.claude-plugin/plugin.json plugin/skills/api/docs/api-reference.md",
+    "version": "npm run build && git add cheat.js cheat.min.js .claude-plugin/plugin.json",
     "release:patch": "npm version patch -m \"release: v%s\" && git push && git push --tags && npm publish && npm run deploy:preview && node scripts/post-release.js",
     "release:minor": "npm version minor -m \"release: v%s\" && git push && git push --tags && npm publish && npm run deploy:preview && node scripts/post-release.js",
     "release:major": "npm version major -m \"release: v%s\" && git push && git push --tags && npm publish && npm run deploy:preview && node scripts/post-release.js",
