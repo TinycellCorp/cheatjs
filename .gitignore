@@ -5,4 +5,5 @@ dist-preview/
 
 .claude/*.local.json
 .omc/
+cocos/
 nul
