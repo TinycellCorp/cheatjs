@@ -1,4 +1,5 @@
-/** @version 2.0.12 */
+/** @version 2.0.13 */
+
 
 
 
@@ -1063,7 +1064,7 @@
 
                 if (resolved !== undefined) {
                     // autoClose 마커 체크
-                    if (resolved._autoClose) {
+                    if (resolved && resolved._autoClose) {
                         // 초록 피드백 후 자동 닫기
                         btn.style.backgroundColor = 'rgba(76, 175, 80, 0.4)';
                         feedbackTimer = setTimeout(function () {
@@ -1196,7 +1197,7 @@
                                 var result = config.onChange(optValue, optIndex);
                                 var resolved = resolveReturnValue(result);
                                 if (resolved !== undefined) {
-                                    if (resolved._autoClose) {
+                                    if (resolved && resolved._autoClose) {
                                         // 초록 피드백 후 자동 닫기
                                         btn.style.backgroundColor = 'rgba(76, 175, 80, 0.4)';
                                         setTimeout(function () {
