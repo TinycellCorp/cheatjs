@@ -52,6 +52,12 @@
 
 
 
+
+
+
+
+
+
 /**
  * Cheat Utility - 게임 엔진 독립적인 치트 UI (바텀시트)
  *
@@ -416,15 +422,13 @@
         return undefined;
     }
 
-    // 버튼 내부 티커 (전광판) 표시
-    var TICKER_SPEED = 80;  // px/초
-
+    // 버튼 내부 티커 피드백 표시
     function showToast(text, btn) {
         if (!btn) return;
         btn.style.position = 'relative';
         btn.style.overflow = 'hidden';
 
-        // 기존 타이머 취소 (경쟁 조건 방지)
+        // 기존 타이머 취소
         if (btn._tickerTimer) {
             clearTimeout(btn._tickerTimer);
             btn._tickerTimer = null;
@@ -437,59 +441,26 @@
             wrap.className = 'cheat-ticker-wrap';
             wrap.style.height = '0';
             btn.appendChild(wrap);
-            requestAnimationFrame(function () {
-                wrap.style.height = '14px';
-            });
-        } else {
-            // 기존 inner 제거 (wrap은 유지)
-            var oldInner = wrap.querySelector('.cheat-ticker-inner');
-            if (oldInner) oldInner.parentNode.removeChild(oldInner);
         }
 
-        // 내부 텍스트 (슬라이드 대상)
-        var inner = document.createElement('span');
-        inner.className = 'cheat-ticker-inner';
-        inner.textContent = text;
-        inner.style.position = 'absolute';
-        inner.style.display = 'inline-block';
-        inner.style.whiteSpace = 'nowrap';
-        inner.style.fontSize = '10px';
-        inner.style.color = 'rgba(255, 255, 255, 0.9)';
-        inner.style.lineHeight = '14px';
-        inner.style.padding = '0 4px';
-        wrap.appendChild(inner);
+        // 텍스트 교체 + 높이 리셋 → 재등장 애니메이션
+        wrap.textContent = text;
+        wrap.style.transition = 'none';       // transition 끄고
+        wrap.style.height = '0';              // 즉시 높이 0
+        void wrap.offsetHeight;               // reflow 강제 (높이 0 확정)
+        wrap.style.transition = '';           // transition 복원
+        wrap.style.height = '14px';           // 확장 애니메이션 시작
 
-        // 크기 측정 (DOM에 추가된 상태에서 측정)
-        var textWidth = inner.offsetWidth;
-        var btnWidth = btn.offsetWidth;
-        // 시작: 우측 끝 안쪽 (텍스트 첫 20px 즉시 보임)
-        var startPos = btnWidth - 20;
-        // 끝: 좌측 밖으로 완전 퇴장
-        var endPos = -(textWidth + 10);
-        var totalDistance = startPos - endPos;
-        var duration = totalDistance / TICKER_SPEED;
-
-        // 초기 위치 설정 (렌더링됨)
-        inner.style.left = startPos + 'px';
-
-        // 다음 프레임: transition 시작 (초기 위치가 렌더링된 후)
-        requestAnimationFrame(function () {
-            inner.style.transition = 'left ' + duration + 's linear';
-            inner.style.left = endPos + 'px';
-        });
-
-        // 완전히 빠져나간 후 inner 제거 + wrap 닫기 체크
+        // 1.5초 후 축소 + 정리
         btn._tickerTimer = setTimeout(function () {
             btn._tickerTimer = null;
-            if (inner.parentNode) inner.parentNode.removeChild(inner);
             wrap.style.height = '0';
             setTimeout(function () {
                 if (wrap.parentNode) wrap.parentNode.removeChild(wrap);
-                // 버튼 스타일 원복
                 btn.style.position = '';
                 btn.style.overflow = '';
             }, 300);
-        }, (duration + 0.3) * 1000);
+        }, 1500);
     }
 
     // 버튼에 기본 스타일 + 지속 스타일 적용
@@ -587,7 +558,13 @@
             '  border-radius: inherit;',
             '  border-bottom-left-radius: 0;',
             '  border-bottom-right-radius: 0;',
-            '  transition: height 0.3s ease;',
+            '  transition: height 0.2s ease;',
+            '  font-size: 10px;',
+            '  color: rgba(255, 255, 255, 0.9);',
+            '  line-height: 14px;',
+            '  text-align: center;',
+            '  white-space: nowrap;',
+            '  text-overflow: ellipsis;',
             '}'
         ].join('\n');
         document.head.appendChild(style);
