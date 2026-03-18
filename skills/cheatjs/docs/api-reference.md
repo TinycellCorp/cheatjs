@@ -232,6 +232,7 @@ cheat.add('위험도', {
 | `true` | 토글 ON - 파란색 배경 유지 |
 | `false` | 토글 OFF - 기본 상태 복귀 |
 | `'close'` | 녹색 피드백 + 바텀시트 자동 닫기 (300ms) |
+| `'문자열'` | 녹색 피드백 + 마퀴 토스트 (바텀시트 상단에 텍스트 슬라이드, 3초) |
 | `{ backgroundColor: '...' }` | 커스텀 스타일 유지 |
 
 **토글 패턴:**
@@ -262,6 +263,15 @@ const colors = ['', 'rgba(255,193,7,0.3)', 'rgba(255,152,0,0.3)'];
 cheat.add('Power', () => {
     level = (level + 1) % 3;
     return level === 0 ? false : { backgroundColor: colors[level] };
+});
+```
+
+**토스트 패턴:**
+
+```javascript
+cheat.add('골드 추가', () => {
+    player.gold += 1000;
+    return '골드 1000 추가 완료';  // 바텀시트 상단에 마퀴 텍스트 표시
 });
 ```
 

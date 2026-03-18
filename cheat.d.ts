@@ -23,7 +23,7 @@ declare global {
     }
 
     /** 버튼 반환값: 지속 상태 제어 */
-    type CheatButtonState = boolean | 'close' | Partial<CheatPersistentStyles>;
+    type CheatButtonState = boolean | 'close' | string | Partial<CheatPersistentStyles>;
 
     /** 셀렉트 액션 설정 */
     interface CheatSelectConfig {

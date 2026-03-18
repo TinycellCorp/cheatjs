@@ -8,9 +8,8 @@ const version = pkg.version;
 
 // 동기화 대상 경로
 const targets = {
-    apiRef: path.join(root, 'plugin', 'skills', 'api', 'docs', 'api-reference.md'),
-    marketplace: path.join(root, '.claude-plugin', 'marketplace.json'),
-    pluginJson: path.join(root, 'plugin', '.claude-plugin', 'plugin.json')
+    apiRef: path.join(root, 'skills', 'cheatjs', 'docs', 'api-reference.md'),
+    pluginJson: path.join(root, '.claude-plugin', 'plugin.json')
 };
 
 console.log('');
@@ -33,17 +32,7 @@ if (fs.existsSync(targets.apiRef)) {
     console.log('\x1b[33m[SKIP]\x1b[0m api-reference.md 없음: ' + targets.apiRef);
 }
 
-// 2. marketplace.json 버전 업데이트
-if (fs.existsSync(targets.marketplace)) {
-    var content = fs.readFileSync(targets.marketplace, 'utf8');
-    var updated = content.replace(/"version"\s*:\s*"[\d.]+"/,  '"version": "' + version + '"');
-    fs.writeFileSync(targets.marketplace, updated, 'utf8');
-    console.log('\x1b[32m[OK]\x1b[0m marketplace.json 버전 업데이트: v' + version);
-} else {
-    console.log('\x1b[33m[SKIP]\x1b[0m marketplace.json 없음: ' + targets.marketplace);
-}
-
-// 3. plugin.json 버전 업데이트
+// 2. plugin.json 버전 업데이트
 if (fs.existsSync(targets.pluginJson)) {
     var content = fs.readFileSync(targets.pluginJson, 'utf8');
     var updated = content.replace(/"version"\s*:\s*"[\d.]+"/,  '"version": "' + version + '"');
@@ -56,5 +45,5 @@ if (fs.existsSync(targets.pluginJson)) {
 console.log('');
 console.log('\x1b[33m[REMINDER]\x1b[0m API 변경이 있었다면 아래 파일도 업데이트하세요:');
 console.log('  ' + targets.apiRef);
-console.log('  방법: 수동 편집');
+console.log('  방법: 수동 편집 또는 /cheatjs api');
 console.log('');

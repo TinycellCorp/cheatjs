@@ -38,6 +38,18 @@
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
 /**
  * Cheat Utility - 게임 엔진 독립적인 치트 UI (바텀시트)
  *
@@ -384,6 +396,7 @@
     function resolveReturnValue(result) {
         if (result === undefined || result === null) return undefined;
         if (result === 'close') return { _autoClose: true };  // 자동 닫기 마커
+        if (typeof result === 'string') return { _toast: result };  // 마퀴 토스트 마커
         if (result === true) return TOGGLE_ON_STYLES;
         if (result === false) return null;
         if (typeof result === 'object') {
@@ -399,6 +412,76 @@
             return hasProps ? filtered : undefined;
         }
         return undefined;
+    }
+
+    // 버튼 내부 티커 (전광판) 표시
+    var TICKER_SPEED = 200;  // px/초
+    var TICKER_MAX = 3;      // 버튼당 최대 동시 메시지
+
+    function showToast(text, btn) {
+        if (!btn) return;
+        btn.style.position = 'relative';
+
+        // wrap 재사용 또는 생성
+        var wrap = btn.querySelector('.cheat-ticker-wrap');
+        if (!wrap) {
+            wrap = document.createElement('span');
+            wrap.className = 'cheat-ticker-wrap';
+            wrap.style.height = '0';
+            btn.appendChild(wrap);
+            // 높이 확장 애니메이션
+            requestAnimationFrame(function () {
+                wrap.style.height = '14px';
+            });
+        }
+
+        // 최대 개수 초과 시 무시
+        var existing = wrap.querySelectorAll('.cheat-ticker-inner');
+        if (existing.length >= TICKER_MAX) return;
+
+        // 내부 텍스트 (슬라이드 대상)
+        var inner = document.createElement('span');
+        inner.className = 'cheat-ticker-inner';
+        inner.textContent = text;
+        inner.style.position = 'absolute';
+        inner.style.display = 'inline-block';
+        inner.style.whiteSpace = 'nowrap';
+        inner.style.fontSize = '10px';
+        inner.style.color = 'rgba(255, 255, 255, 0.9)';
+        inner.style.lineHeight = '14px';
+        inner.style.padding = '0 4px';
+        wrap.appendChild(inner);
+
+        // 크기 측정 (DOM에 추가된 상태에서 측정)
+        var textWidth = inner.offsetWidth;
+        var btnWidth = btn.offsetWidth;
+        // 시작: 우측 끝 안쪽 (텍스트 첫 20px 즉시 보임)
+        var startPos = btnWidth - 20;
+        // 끝: 좌측 밖으로 완전 퇴장
+        var endPos = -(textWidth + 10);
+        var totalDistance = startPos - endPos;
+        var duration = totalDistance / TICKER_SPEED;
+
+        // 초기 위치 설정 (렌더링됨)
+        inner.style.left = startPos + 'px';
+
+        // 다음 프레임: transition 시작 (초기 위치가 렌더링된 후)
+        requestAnimationFrame(function () {
+            inner.style.transition = 'left ' + duration + 's linear';
+            inner.style.left = endPos + 'px';
+        });
+
+        // 완전히 빠져나간 후 inner 제거 + wrap 닫기 체크
+        setTimeout(function () {
+            if (inner.parentNode) inner.parentNode.removeChild(inner);
+            // 남은 메시지가 없으면 wrap 축소 후 제거
+            if (wrap.querySelectorAll('.cheat-ticker-inner').length === 0) {
+                wrap.style.height = '0';
+                setTimeout(function () {
+                    if (wrap.parentNode) wrap.parentNode.removeChild(wrap);
+                }, 300);
+            }
+        }, (duration + 0.3) * 1000);
     }
 
     // 버튼에 기본 스타일 + 지속 스타일 적용
@@ -484,6 +567,17 @@
             '}',
             '#cheat-bottomsheet button:active {',
             '  opacity: 0.8;',
+            '}',
+            '.cheat-ticker-wrap {',
+            '  position: absolute;',
+            '  top: 0;',
+            '  left: 0;',
+            '  right: 0;',
+            '  overflow: hidden;',
+            '  background: rgba(76, 175, 80, 0.5);',
+            '  pointer-events: none;',
+            '  border-radius: 4px 4px 0 0;',
+            '  transition: height 0.3s ease;',
             '}'
         ].join('\n');
         document.head.appendChild(style);
@@ -1074,6 +1168,14 @@
                         setTimeout(function () {
                             hide();
                         }, 300);
+                    } else if (resolved && resolved._toast) {
+                        // 마퀴 토스트 표시 + 버튼 녹색 피드백
+                        showToast(resolved._toast, btn);
+                        btn.style.backgroundColor = 'rgba(76, 175, 80, 0.4)';
+                        feedbackTimer = setTimeout(function () {
+                            feedbackTimer = null;
+                            applyPersistentStyles(btn, null);
+                        }, 200);
                     } else {
                         // 기존 토글/커스텀 스타일 로직
                         var actionData = findActionByBtn(btn);
@@ -1206,6 +1308,13 @@
                                         setTimeout(function () {
                                             hide();
                                         }, 300);
+                                    } else if (resolved && resolved._toast) {
+                                        // 마퀴 토스트 표시 + 버튼 녹색 피드백
+                                        showToast(resolved._toast, btn);
+                                        btn.style.backgroundColor = 'rgba(76, 175, 80, 0.4)';
+                                        setTimeout(function () {
+                                            applyPersistentStyles(btn, null, STYLES.selectBtn);
+                                        }, 200);
                                     } else {
                                         // 토글/커스텀 스타일
                                         if (currentAction) {
