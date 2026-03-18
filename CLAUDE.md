@@ -12,23 +12,23 @@ npm run build    # inject-version + minify + validate-types + type-check
 npm run dev      # Vite dev preview (dev/)
 ```
 
-## Release Checklist
+## Release
 
-배포 전 반드시 아래 항목을 확인한다.
+배포는 `/release` 스킬을 사용한다. 검증 + 버전 자동 결정 + 배포를 한 번에 처리.
 
-1. **`npm run build` 통과** - 4단계 모두 성공해야 함
-2. **`cheat.d.ts` 동기화** - 구조체/인터페이스 변경 시 타입 선언 업데이트
-3. **`README.md` 업데이트** - 새 기능/API 변경 시 문서 반영
-4. **플러그인 API 레퍼런스 동기화** - API 변경 시 `skills/cheatjs/docs/api-reference.md` 업데이트 (수동 편집)
-5. **커밋 완료** - 위 파일들이 모두 커밋된 상태에서 배포
-
-```bash
-npm run release:patch   # patch 배포
-npm run release:minor   # minor 배포
-npm run release:major   # major 배포
+```
+/release        — 검증 → 버전 결정 → 확인 → 배포
+/release check  — 검증만 (배포 안 함)
 ```
 
-> `post-release.js`가 marketplace.json, plugin.json, api-reference.md 버전을 자동 동기화한다.
+수동 배포가 필요한 경우:
+```bash
+node scripts/validate-release.js  # 검증
+npm run release:patch              # patch 배포
+```
+
+> `sync-version.js`가 version hook에서 plugin.json, api-reference.md 버전을 릴리즈 커밋에 동기화한다.
+> API 내용 변경은 `skills/cheatjs/docs/api-reference.md`를 수동 편집한다.
 
 ## Key Architecture
 - `groups` object: `{ desc, commands[], tab, content, dropdownItem }`
