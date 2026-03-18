@@ -50,6 +50,8 @@
 
 
 
+
+
 /**
  * Cheat Utility - 게임 엔진 독립적인 치트 UI (바텀시트)
  *
@@ -415,12 +417,18 @@
     }
 
     // 버튼 내부 티커 (전광판) 표시
-    var TICKER_SPEED = 200;  // px/초
-    var TICKER_MAX = 3;      // 버튼당 최대 동시 메시지
+    var TICKER_SPEED = 80;  // px/초
 
     function showToast(text, btn) {
         if (!btn) return;
         btn.style.position = 'relative';
+        btn.style.overflow = 'hidden';
+
+        // 기존 타이머 취소 (경쟁 조건 방지)
+        if (btn._tickerTimer) {
+            clearTimeout(btn._tickerTimer);
+            btn._tickerTimer = null;
+        }
 
         // wrap 재사용 또는 생성
         var wrap = btn.querySelector('.cheat-ticker-wrap');
@@ -429,15 +437,14 @@
             wrap.className = 'cheat-ticker-wrap';
             wrap.style.height = '0';
             btn.appendChild(wrap);
-            // 높이 확장 애니메이션
             requestAnimationFrame(function () {
                 wrap.style.height = '14px';
             });
+        } else {
+            // 기존 inner 제거 (wrap은 유지)
+            var oldInner = wrap.querySelector('.cheat-ticker-inner');
+            if (oldInner) oldInner.parentNode.removeChild(oldInner);
         }
-
-        // 최대 개수 초과 시 무시
-        var existing = wrap.querySelectorAll('.cheat-ticker-inner');
-        if (existing.length >= TICKER_MAX) return;
 
         // 내부 텍스트 (슬라이드 대상)
         var inner = document.createElement('span');
@@ -472,15 +479,16 @@
         });
 
         // 완전히 빠져나간 후 inner 제거 + wrap 닫기 체크
-        setTimeout(function () {
+        btn._tickerTimer = setTimeout(function () {
+            btn._tickerTimer = null;
             if (inner.parentNode) inner.parentNode.removeChild(inner);
-            // 남은 메시지가 없으면 wrap 축소 후 제거
-            if (wrap.querySelectorAll('.cheat-ticker-inner').length === 0) {
-                wrap.style.height = '0';
-                setTimeout(function () {
-                    if (wrap.parentNode) wrap.parentNode.removeChild(wrap);
-                }, 300);
-            }
+            wrap.style.height = '0';
+            setTimeout(function () {
+                if (wrap.parentNode) wrap.parentNode.removeChild(wrap);
+                // 버튼 스타일 원복
+                btn.style.position = '';
+                btn.style.overflow = '';
+            }, 300);
         }, (duration + 0.3) * 1000);
     }
 
@@ -574,9 +582,11 @@
             '  left: 0;',
             '  right: 0;',
             '  overflow: hidden;',
-            '  background: rgba(76, 175, 80, 0.5);',
+            '  background: rgba(76, 175, 80, 0.4);',
             '  pointer-events: none;',
-            '  border-radius: 4px 4px 0 0;',
+            '  border-radius: inherit;',
+            '  border-bottom-left-radius: 0;',
+            '  border-bottom-right-radius: 0;',
             '  transition: height 0.3s ease;',
             '}'
         ].join('\n');
