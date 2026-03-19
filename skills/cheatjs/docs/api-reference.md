@@ -1,4 +1,4 @@
-# cheatjs API Reference (v2.1.0)
+# cheatjs API Reference (v2.1.1)
 
 ## 통합 패턴
 
